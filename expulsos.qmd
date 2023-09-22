@@ -1,0 +1,62 @@
+---
+title: "Expulsos"
+editor: visual
+lang: "pt"
+format:
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| warning: false
+#| message: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(deflateBR)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(DT)
+```
+
+```{r}
+
+expulsos <- read_excel("expulsos/expulsos.xlsx") %>% clean_names()
+
+expulsos <- expulsos %>% mutate(ano = year(data_publicacao))
+```
+
+```{r}
+
+```
+
+```{r}
+`%notin%` <- Negate(`%in%`)
+```
+
+```{r}
+expulsos  %>% group_by( categoria_da_sancao, fundamentacao_legal) %>% count()  %>% kable()
+```
+
+```{r}
+expulsos %>% filter( ! str_detect(fundamentacao_legal, "JUDICIAL"), !str_detect(fundamentacao_legal, "INASSIDUIDADE"), !str_detect(fundamentacao_legal,"ABANDONO")) %>% group_by(fundamentacao_legal) %>% count() %>% arrange(desc(n)) %>% head(20) %>% kable()
+
+```
+
+```{r}
+
+
+
+```

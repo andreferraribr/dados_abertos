@@ -1,0 +1,261 @@
+---
+title: "Favorecidos"
+editor: visual
+lang: "pt"
+format:
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+  error: false
+---
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(deflateBR)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(igraph)
+library(data.table)
+library(DT)
+
+
+```
+
+## Fonte dos dados
+
+Neste relatório nós vamos analisar os dados do recebimento de recursoso por favorecido ( @fig-favorecidos). O dicionário de dados (@fig-dicionario) detalha os atributos do nosso estudo.
+
+![Recursos recebidos por favorecidos](cnpj/print_dicionario_favorecidos.png){#fig-favorecidos}
+
+![Dicionário de dados](cnpj/print_dicionario_favorecidos.png){#fig-dicionario}
+
+[dados abertos](https://portaldatransparencia.gov.br/download-de-dados)
+
+[network](https://old.library.upenn.edu/blogs/rdds/network-visualization-r#:~:text=Network%20diagrams%20(or%20Graphs)%20show,igraph%3A%20data%20preparation%20and%20plotting) [network2](https://ladal.edu.au/net.html)
+
+```{r}
+`%notin%` <- Negate(`%in%`)
+```
+
+Os arquivos vem no padrão "cnpj_yyyy_mm", nós vamos acessar os dados de janeiro de 2023 a partir do arquivo "cnpj_2023_01.xlsx".
+
+```{r}
+
+favorecidos_2023_01 <-read_delim("cnpj/202301_RecebimentosRecursosPorFavorecido.csv", 
+    delim = ";", escape_double = FALSE, col_types = cols(`Ano e mês do lançamento` = col_date(format = "%m/%Y"), 
+        `Valor Recebido` = col_number()), 
+    locale = locale(decimal_mark = ",", grouping_mark = ".", 
+        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names() 
+set.seed(12345)                             # Set seed for reproducibility
+```
+
+## Visão geral dos dados
+
+```{r}
+favorecidos_2023_01 %>% glimpse()
+```
+
+### Tipos de favorecidos
+
+```{r}
+length(unique(favorecidos_2023_01$codigo_favorecido))
+set.seed(9)  
+favorecidos_amostra <- sample_n(favorecidos_2023_01, 100)  
+ 
+favorecidos_amostra %>% group_by(nome_favorecido, codigo_favorecido) %>% count() %>% head(10)  %>% kable()
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+
+favorecidos_2023_01 <- favorecidos_2023_01 %>% 
+  mutate(tipo_favorecido =
+  case_when(
+ 
+  str_detect(codigo_favorecido, "-") & str_length(codigo_favorecido)>8 ~ "PF",
+  str_length(codigo_favorecido) == 6  ~ "UG",
+  codigo_favorecido %in% c(10001,10002,20001,20002)  ~ "UG",
+  nome_favorecido == "Sigiloso"   ~ "Sigiloso",
+  nome_favorecido == "SEM INFORMACAO"   ~ "Sem Informação",
+  nome_favorecido == "NAO SE APLICA"   ~ "Não se Aplica",
+  nome_favorecido == "FOLHA DE PAGAMENTO" ~ "Folha de Pagamento",
+  startsWith(codigo_favorecido,"RB") ~ "Intra",
+  startsWith(codigo_favorecido,"TN") ~ "Transferências",
+  startsWith(codigo_favorecido,"EX") ~ "Exterior",
+  # podem surgir novas regras no futuro
+  str_detect(nome_favorecido, "BANCO") & nome_favorecido %notin% c("AUTO POSTO SABANCO LTDA", "ASSOCIACAO CRISTA BANCO DA SOLIDARIEDADE","FUNDACAO BANCO DE OLHOS DE GOIAS","BB-PREVIDENCIA FUNDO DE PENSAO BANCO DO BRASIL", "CAIXA DE PREVIDENCIA DOS FUNCIONARIOS DO BANCO DO NORDESTE DO BRASIL - CAPEF", "CAIXA DE PREVIDENCIA DOS FUNCS DO BANCO DO BRASIL","BANCO DE OLHOS DE SOROCABA" ) | nome_favorecido == "CAIXA ECONOMICA FEDERAL"  ~ "Banco",
+  startsWith(nome_favorecido,"BANCO")   ~ "Banco",
+  TRUE ~ "PJ"
+                                            
+                                          ))
+set.seed(9)  
+favorecidos_amostra <- sample_n(favorecidos_2023_01, 100) 
+
+favorecidos_amostra %>% filter(tipo_favorecido != "PF" | startsWith(nome_favorecido,"C") )%>% filter(tipo_favorecido != "PJ" | startsWith(nome_favorecido,"H") ) %>% group_by(tipo_favorecido ,nome_favorecido, codigo_favorecido)  %>% count() %>% kable()
+```
+
+```{r}
+favorecidos_2023_01 %>% filter(tipo_favorecido == "PF") %>% group_by(codigo_favorecido) %>% count() %>% filter(n>1) %>% head() %>% kable()
+```
+
+```{r}
+
+
+favorecidos_2023_01 %>% filter(str_detect(codigo_favorecido,"000.104-") ) %>% group_by(codigo_favorecido, nome_favorecido) %>% count()  %>% head() %>% kable()
+
+
+favorecidos_2023_01 <- favorecidos_2023_01 %>% mutate(nome_codigo_favorecido = paste0(nome_favorecido, " - ", codigo_favorecido))
+```
+
+```{r}
+favorecidos_2023_01 %>% filter(tipo_favorecido == "PF", str_detect(codigo_favorecido,"000.104-") ) %>% group_by(nome_codigo_favorecido) %>% count()  %>% head() %>% kable()
+```
+
+### Tipos de pagadores
+
+`r  length(unique(favorecidos_2023_01$codigo_unidade_gestora))`
+
+```{r}
+length(unique(favorecidos_2023_01$codigo_unidade_gestora))
+
+favorecidos_amostra %>% group_by(nome_unidade_gestora, codigo_unidade_gestora) %>% head(10) %>% count()  %>% kable()
+```
+
+#### A unidade gestora
+
+### Tipos de pagamentos (Ordens Bancárias - OBs)
+
+## Quem recebe (favorecido)
+
+### Por UF
+
+### Por Município
+
+### Por Tipo
+
+### Top favorecidos
+
+## Quem paga
+
+### Por UF
+
+### Por Município
+
+### Por Tipo
+
+### Top pagadores
+
+## Vinculando pagador ao favorecido
+
+### Vinculando por UF
+
+### Vinculando por Município
+
+```{r}
+
+```
+
+```{r}
+favorecidos_2023_01 %>% filter (tipo_favorecido %notin% c("Intra","UG", "Transferências", "Exterior" , "Sigiloso", "Banco", "Folha de Pagamento"))%>% group_by(sigla_uf) %>% summarise(valor = sum(valor_recebido)/1000000000) %>% arrange(desc (valor)) %>% head(100) %>%  kable()
+```
+
+```{r}
+#| warning: false
+#| message: false
+
+(favorecidos_2023_01 %>% filter(tipo_favorecido == "Banco") %>% group_by(nome_favorecido) %>% summarise(valor = sum(valor_recebido)) %>% kable())
+
+favorecidos_2023_01 <- favorecidos_2023_01 %>% 
+       rename( "uf_favorecido" = "sigla_uf")
+
+```
+
+```{r}
+siafirelatoriounidadesgestoras <- read_csv("cnpj/siafirelatoriounidadesgestoras.csv") %>% clean_names() 
+
+siafirelatoriounidadesgestoras <- siafirelatoriounidadesgestoras %>% 
+       rename("uf_ug" = "uf")
+```
+
+```{r}
+network_ug_uf <- left_join( favorecidos_2023_01 %>% filter (tipo_favorecido %in% c( "PJ"))%>% group_by(uf_favorecido, nome_orgao, nome_orgao_superior,nome_municipio, nome_unidade_gestora ,codigo_unidade_gestora) %>% summarise(valor = sum(valor_recebido)), siafirelatoriounidadesgestoras %>% select(ug,uf_ug), by = c ("codigo_unidade_gestora" = "ug"))
+
+network_ug_uf <- network_ug_uf %>% mutate(destino = ifelse(uf_ug== uf_favorecido, "interno","externo"))
+
+network_ug_uf %>% filter(uf_ug != "DF", uf_favorecido != "DF")%>% group_by(uf_ug,destino) %>% summarise(valor = sum(valor)/1000000000) %>% kable()
+```
+
+```{r}
+teste <- network_ug_uf%>% filter(uf_favorecido != -1, uf_ug != "DF", uf_favorecido != "DF") %>% group_by(uf_favorecido,uf_ug) %>% summarise(valor = sum(valor/1000000)) %>% filter(uf_ug == "ES")
+```
+
+```{r}
+library(networkD3)
+
+teste <- network_ug_uf%>% filter(uf_favorecido != -1, uf_ug != "DF", uf_favorecido != "DF") %>% group_by(uf_favorecido,uf_ug) %>% summarise(valor = sum(valor/1000000)) 
+uf_nome <- c(unique(teste$uf_favorecido))
+uf_node <- c(0:(length(uf_nome)-1))
+
+
+
+df_uf <- data.frame(uf_nome, uf_node)
+
+df_ug_pagadora <- left_join(teste %>% select(-uf_favorecido), df_uf , by = c("uf_ug" = "uf_nome"))
+df_ug_pagadora <- df_ug_pagadora %>% 
+       rename( "uf_ug_node" = "uf_node")
+
+
+df_uf_favorecido <- left_join(teste %>% select(-uf_ug), df_uf , by = c("uf_favorecido"="uf_nome"))
+df_uf_favorecido <- df_uf_favorecido %>% 
+       rename( "uf_favorecido_node" = "uf_node") 
+
+
+
+
+df_final <- cbind(df_ug_pagadora, df_uf_favorecido %>% select(-valor, - uf_favorecido))
+
+df_final <- df_final %>% rename(
+  "uf_favorecido" = "uf_favorecido...1"
+) %>% select(- uf_favorecido...5)
+
+df_final <- df_final %>% relocate(valor, .after=uf_favorecido_node) %>% relocate(uf_favorecido, .after=uf_ug)
+
+
+links <- df_final %>% select(uf_ug_node, uf_favorecido_node, valor) %>% filter(valor>0)
+
+colnames(links) <- c("source", "target", "value")
+
+nodes <- as.data.frame(df_uf %>% select(uf_nome))
+# 
+# sankeyNetwork(Links = links, Nodes = nodes,
+#  Source = "source", Target = "target",
+#  Value = "value", NodeID = "uf_nome",
+#  fontSize= 12, nodeWidth = 30)
+
+```
+
+```{r}
+
+
+planilhas_favorecidos <- str_subset(list.files(path = "./cnpj"),"cnpj")
+
+
+```
