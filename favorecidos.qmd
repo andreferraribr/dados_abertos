@@ -48,9 +48,9 @@ myNumFmt <- as.fmt(digits=0, big.mark=".")
 
 Neste relatório nós vamos analisar os dados do recebimento de recursoso por favorecido ( @fig-favorecidos). O dicionário de dados (@fig-dicionario) detalha os atributos do nosso estudo.
 
-![Recursos recebidos por favorecidos](cnpj/print_dicionario_favorecidos.png){#fig-favorecidos}
+![Recursos recebidos por favorecidos](favorecidos/print_dicionario_favorecidos.png){#fig-favorecidos}
 
-![Dicionário de dados](cnpj/print_dicionario_favorecidos.png){#fig-dicionario}
+![Dicionário de dados](favorecidos/print_dicionario_favorecidos.png){#fig-dicionario}
 
 Os arquivos vem no padrão "favorecidos_j_yyyy_mm", nós vamos acessar os dados de janeiro de 2023 a partir do arquivo "favorecidos_2023_01.xlsx".
 
@@ -93,7 +93,7 @@ length(unique(favorecidos_2023_01$codigo_favorecido))
 set.seed(9)  
 favorecidos_amostra <- sample_n(favorecidos_2023_01, 100)  
  
-favorecidos_amostra %>% group_by(nome_favorecido, codigo_favorecido) %>% count() %>% head(10)  %>% kable()
+favorecidos_amostra %>% group_by(nome_favorecido, codigo_favorecido) %>% count() %>% head(10) %>% select(-n)  %>% kable()
 ```
 
 Após um estudo mais detalhados criamos regras para enquadar os códigos do favorecidos em um dos "tipo_favorecido". A relação dos tipos está na @tbl-tipo_favorecido
@@ -140,7 +140,7 @@ A @tbl-amostra_favorecido traz uma amostra dos favorecidos por tipo de favorecid
 set.seed(9)  
 favorecidos_amostra <- sample_n(favorecidos_2023_01, 100) 
 
-favorecidos_amostra %>% filter(tipo_favorecido != "PF" | startsWith(nome_favorecido,"C") )%>% filter(tipo_favorecido != "PJ" | startsWith(nome_favorecido,"H") ) %>% group_by(tipo_favorecido ,nome_favorecido, codigo_favorecido)  %>% count() %>% kable()
+favorecidos_amostra %>% filter(tipo_favorecido != "PF" | startsWith(nome_favorecido,"C") )%>% filter(tipo_favorecido != "PJ" | startsWith(nome_favorecido,"H") ) %>% group_by(tipo_favorecido ,nome_favorecido, codigo_favorecido)  %>% count()%>% select(-n)  %>% kable()
 ```
 
 Para protejer informações pessoais, a variável "codigo_favorecido" da pessoa física (PF) traz apenas parte do CPF. O padrão é ocultar alguns dígitos do CPF (os três primeiros e os dois últimos). Curiosamente, quando trabalhamos com uma base de dados grando é possível existir código de favorecidos duplicados. A @tbl-cpf_repetido ilustra a repetição do "codigo_favorecido".
@@ -172,34 +172,87 @@ favorecidos_2023_01 <- favorecidos_2023_01 %>% mutate(nome_codigo_favorecido = p
 #| label: tbl-nome_codigo
 #| tbl-cap: Variável nome_codigo_favorecido.
 
-favorecidos_2023_01 %>% filter(tipo_favorecido == "PF", str_detect(codigo_favorecido,"470.444-") ) %>% group_by(nome_codigo_favorecido) %>% count()  %>% head() %>% kable()
+favorecidos_2023_01 %>% filter(tipo_favorecido == "PF", str_detect(codigo_favorecido,"470.444-") ) %>% group_by(nome_codigo_favorecido) %>% count()  %>% head()%>% select(-n)  %>% kable()
 ```
 
-Depois da visão geral e dos pequenhos ajustes nós podemos analisar melhor os detalhes sobre os pagadores e sobre os recebedores.
+Depois da visão geral e dos pequenos ajustes, nós podemos analisar melhor os detalhes sobre os pagadores e sobre os favorecidos.
 
 ### Tipos de pagadores
 
-`r  length(unique(favorecidos_2023_01$codigo_unidade_gestora))`
+Há um único tipo de pagador na base de dados. Todos os `r   Format( length(unique(favorecidos_2023_01$codigo_unidade_gestora)),fmt=myNumFmt)` pagadores da base de dados são Unidades Gestoras do Siafi (UGs). A @tbl-amostra_pagadores traz uma amostra das UGs.
 
 ```{r}
-length(unique(favorecidos_2023_01$codigo_unidade_gestora))
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-amostra_pagadores
+#| tbl-cap: Amostra dos Tipos de Pagadores.
 
-favorecidos_amostra %>% group_by( nome_unidade_gestora, codigo_unidade_gestora) %>% head(10) %>% count() %>% arrange(desc(n))  %>% kable()
+favorecidos_amostra %>% group_by( nome_unidade_gestora, codigo_unidade_gestora) %>% head(10) %>% count() %>% arrange(desc(n)) %>% select(-n)  %>% kable()
 ```
 
-#### A unidade gestora
+### Tipos de valor (positivo ou negativo)
 
-### Tipos de pagamentos (Ordens Bancárias - OBs)
+Ao mergulhar nos dados, percebemos algo incomum. Alguns pagamentos aparecem com valor negativo. Estes valores negativos
+
+```{r}
+favorecidos_2023_01 %>% filter(valor_recebido<0)%>% group_by(nome_unidade_gestora, tipo_favorecido, nome_favorecido) %>%  summarise(valor_recebido = round(sum(valor_recebido)/1000000,1)) %>% arrange(valor_recebido) %>% head(10) %>% kable()
+
+
+
+```
 
 ## Quem recebe (favorecido)
+
+A base de dados traz o favorecido da ordem bancária, que não é necessariamente o destinatário final do recurso. Por exemplo, no caso de pagamento de transferências constitucionais aos municípios, a unidade gestora pode fazer uma única ordem bancária para o Banco do Brasil que, por sua vez, distribui o valor total entre os municípios.
+
+A @fig-intermediario ilustra a situação do "intermediário financeiro". O Banco do Brasil recebeu R\$ 425 milhões via a ordem bancária 2023OB8000186 e depois repassou os recursos para municípios (confira: [favorecidos da OB](https://portaldatransparencia.gov.br/despesas/pagamento/257001000012023OB800186?ordenarPor=fase&direcao=desc)).
+
+![Intermediário financeiro ](favorecidos/ob_bb_intermediario.png){#fig-intermediario}
+
+A @fig-favorecido_final lista os favorecidos finais da ordem bancária 2023OB8000186.
+
+![Favorecidos finais da ordem bancaria](favorecidos/ob_favorecido_final.png){#fig-favorecido_final}
+
+Quando analisarmos os favorecidos é bom relebrar o fato de alguns deles atuarem como repassadores dos recursos para os beneficiários finais.
+
+### Por Tipo de Favorecidos
+
+A @tbl-tipo_favorecido traz o tipo de favorecido classificado pelo valor recebido em R\$ bilhões. Como alertamos anteiormente, os favorecidos são os favorecidos da ordem bancário e não necessariamente os favorecidos finais.
+
+Alguns pontos se destacam, por exemplo, o total
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-valor_por_tipo_favorecido
+#| tbl-cap: Recebimento por tipo de favorecido (R$ Bi).
+
+favorecidos_2023_01 %>% group_by( tipo_favorecido) %>%  summarise(valor_recebido = round(sum(valor_recebido)/1000000000,1)) %>% arrange(desc(valor_recebido))  %>% kable(col.names = c("Tipo de Favorecido", "Valor Recebido (R$ bi)"))
+```
+
+```{r}
+favorecidos_2023_01 %>% filter(tipo_favorecido == "Transferências") %>% group_by( nome_favorecido) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000000,1)) %>% arrange(desc(valor_recebido))  %>% kable(col.names = c("Favorecido", "Valor Recebido (R$ bi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+favorecidos_2023_01 %>% filter(tipo_favorecido == "Intra") %>% group_by( nome_favorecido) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000000,1)) %>% arrange(desc(valor_recebido))  %>% kable(col.names = c("Favorecido", "Valor Recebido (R$ bi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+favorecidos_2023_01 %>% filter(tipo_favorecido == "UG") %>% group_by( nome_favorecido) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000000,1)) %>% arrange(desc(valor_recebido)) %>% head(10)  %>% kable(col.names = c("Favorecido", "Valor Recebido (R$ bi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+### Top favorecidos
+
+```{r}
+favorecidos_2023_01  %>% group_by( tipo_favorecido, nome_favorecido) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000000,1)) %>% arrange(desc(valor_recebido)) %>% head(10)  %>% kable(col.names = c("Tipo do Favorecido", "Favorecido", "Valor Recebido (R$ bi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+```
 
 ### Por UF
 
 ### Por Município
-
-### Por Tipo
-
-### Top favorecidos
 
 ## Quem paga
 
