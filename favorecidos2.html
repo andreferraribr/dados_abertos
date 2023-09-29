@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt" xml:lang="pt"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Favorecidos</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="favorecidos2_files/libs/clipboard/clipboard.min.js"></script>
+<script src="favorecidos2_files/libs/quarto-html/quarto.js"></script>
+<script src="favorecidos2_files/libs/quarto-html/popper.min.js"></script>
+<script src="favorecidos2_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="favorecidos2_files/libs/quarto-html/anchor.min.js"></script>
+<link href="favorecidos2_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="favorecidos2_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="favorecidos2_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="favorecidos2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="favorecidos2_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Favorecidos</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(purrr)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(plotly)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(deflateBR)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DescTools)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DT)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># negar %in%</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">%notin%</span><span class="st">`</span> <span class="ot">&lt;-</span> <span class="fu">Negate</span>(<span class="st">`</span><span class="at">%in%</span><span class="st">`</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># formato dos numeros</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>myNumFmt <span class="ot">&lt;-</span> <span class="fu">as.fmt</span>(<span class="at">digits=</span><span class="dv">0</span>, <span class="at">big.mark=</span><span class="st">"."</span>)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<section id="fonte-dos-dados" class="level2">
+<h2 class="anchored" data-anchor-id="fonte-dos-dados">Fonte dos dados</h2>
+<p>Neste relatório nós vamos analisar os dados do recebimento de recursoso por favorecido ( <a href="#fig-favorecidos">Figura&nbsp;1</a>). O dicionário de dados (<a href="#fig-dicionario">Figura&nbsp;2</a>) detalha os atributos do nosso estudo.</p>
+<div id="fig-favorecidos" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="favorecidos/print_recursos_recebidos_por_favorecido.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figura&nbsp;1: Recursos recebidos por favorecidos</figcaption>
+</figure>
+</div>
+<div id="fig-dicionario" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="favorecidos/print_dicionario_favorecidos.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figura&nbsp;2: Dicionário de dados</figcaption>
+</figure>
+</div>
+<p>Os arquivos estáo no padrão “favorecidos_j_yyyy_mm” e nós vamos acessar os dados de janeiro de 2023 a partir do arquivo “favorecidos_2023_01.xlsx”.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="ot">&lt;-</span><span class="fu">read_delim</span>(<span class="st">"favorecidos/202301_RecebimentosRecursosPorFavorecido.csv"</span>, </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">delim =</span> <span class="st">";"</span>, <span class="at">escape_double =</span> <span class="cn">FALSE</span>, <span class="at">col_types =</span> <span class="fu">cols</span>(<span class="st">`</span><span class="at">Ano e mês do lançamento</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">col_date</span>(<span class="at">format =</span> <span class="st">"%m/%Y"</span>), </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">`</span><span class="at">Valor Recebido</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">col_number</span>()), </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">locale =</span> <span class="fu">locale</span>(<span class="at">decimal_mark =</span> <span class="st">","</span>, <span class="at">grouping_mark =</span> <span class="st">"."</span>, </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">encoding =</span> <span class="st">"Latin1"</span>), <span class="at">trim_ws =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> <span class="fu">clean_names</span>() </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">12345</span>)                             <span class="co"># Set seed for reproducibility</span></span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="visão-geral-dos-dados" class="level2">
+<h2 class="anchored" data-anchor-id="visão-geral-dos-dados">Visão geral dos dados</h2>
+<p>Utilizamos a função glimpse para ter uma visão geral dos dados. Apresentamos abaixo os doze atributos (codigo_favorecido, nome_favorecido… valor_recebido), o tipo de cada atributo (chr, data ou double), e alguns dos resultados para cada um dos atributos.</p>
+<p>Com o glimpse, podemos observar que os nossos dados contém 430.800 registros.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">glimpse</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 430,800
+Columns: 12
+$ codigo_favorecido       &lt;chr&gt; "08091098000141", "43972677000102", "087929180…
+$ nome_favorecido         &lt;chr&gt; ",FUNDO MUNICIPAL DE SAUDE DE PALMEIRINA", "00…
+$ sigla_uf                &lt;chr&gt; "PE", "ES", "BA", "PA", "SP", "SP", "SP", "RJ"…
+$ nome_municipio          &lt;chr&gt; "PALMEIRINA", "VILA VELHA", "PRESIDENTE TANCRE…
+$ codigo_orgao_superior   &lt;dbl&gt; 36000, 52000, 26000, 26000, 46000, 52000, 2500…
+$ nome_orgao_superior     &lt;chr&gt; "Ministério da Saúde", "Ministério da Defesa",…
+$ codigo_orgao            &lt;dbl&gt; 36000, 52131, 26450, 26443, 46000, 52111, 2500…
+$ nome_orgao              &lt;chr&gt; "Ministério da Saúde - Unidades com vínculo di…
+$ codigo_unidade_gestora  &lt;dbl&gt; 257001, 781600, 158720, 155018, 170131, 120633…
+$ nome_unidade_gestora    &lt;chr&gt; "DIRETORIA EXECUTIVA DO FUNDO NAC. DE SAUDE", …
+$ ano_e_mes_do_lancamento &lt;date&gt; 2023-01-01, 2023-01-01, 2023-01-01, 2023-01-0…
+$ valor_recebido          &lt;dbl&gt; 226937.43, 3600.00, 34112.16, 996.80, 31705.74…</code></pre>
+</div>
+</div>
+<section id="tipos-de-favorecidos" class="level3">
+<h3 class="anchored" data-anchor-id="tipos-de-favorecidos">Tipos de favorecidos</h3>
+<p>Nós nos deparamos com um desafio ao analisar os favoredidos: não há um atributo para identificar o tipo de favorecido. Ao analisarmos uma amostra dos favorecidos ( <a href="#tbl-favoreciros_nome_amostra">Tabela&nbsp;1</a>), observamos:</p>
+<p>a) um padrão parecido com o formato de cpf de pessoa física (*.###.###-);</p>
+<p>b) um com 6 dígitos (170168) semelhante ao código de uma Unidade Gestora (UG) do Siafi;</p>
+<p>c) a sequência 32832229000189 indicando ser o CNPJ de uma empresa.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">9</span>)  </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>favorecidos_amostra <span class="ot">&lt;-</span> <span class="fu">sample_n</span>(favorecidos_2023_01, <span class="dv">100</span>)  </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>favorecidos_amostra <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(nome_favorecido, codigo_favorecido) <span class="sc">%&gt;%</span> <span class="fu">count</span>() <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>n)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-favoreciros_nome_amostra" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;1: Amostra dos favorecidos por nome, código e quantidade.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">nome_favorecido</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">codigo_favorecido</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ABGAIL VIANA FERREIRA</td>
+<td style="text-align: left;">***.933.093-**</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ALAN LUCAS BRAZ</td>
+<td style="text-align: left;">***.003.654-**</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ALFANDEGA DA RFB PORTO DE SANTOS</td>
+<td style="text-align: left;">170168</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ALL PARTS COMERCIO E SERVICOS AERONAUTICOS LTDA</td>
+<td style="text-align: left;">32832229000189</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AMANDA MUNARI GUIMARAES</td>
+<td style="text-align: left;">***.426.860-**</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ANA BEATRIZ GOMES OLIVEIRA</td>
+<td style="text-align: left;">***.088.713-**</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ANA FRANCISCA CAMARA BENEDETTI</td>
+<td style="text-align: left;">***.804.108-**</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ANA PAULA DA SILVA AZEVEDO</td>
+<td style="text-align: left;">***.118.754-**</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ANA VITORIA TENIUS SVOLENSKI</td>
+<td style="text-align: left;">***.785.469-**</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ANDRE RODRIGUES DA SILVA</td>
+<td style="text-align: left;">***.705.560-**</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+<p>Após um estudo mais detalhados criamos regras para enquadar os códigos dos favorecidos em um dos “tipo_favorecido”. A relação dos tipos está na <a href="#tbl-tipo_favorecido">Tabela&nbsp;2</a></p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="ot">&lt;-</span> favorecidos_2023_01 <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">tipo_favorecido =</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">case_when</span>(</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">str_detect</span>(codigo_favorecido, <span class="st">"-"</span>) <span class="sc">&amp;</span> <span class="fu">str_length</span>(codigo_favorecido)<span class="sc">&gt;</span><span class="dv">8</span> <span class="sc">~</span> <span class="st">"PF"</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">str_length</span>(codigo_favorecido) <span class="sc">==</span> <span class="dv">6</span> <span class="sc">~</span> <span class="st">"UG"</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  nome_favorecido <span class="sc">==</span> <span class="st">"Sigiloso"</span>   <span class="sc">~</span> <span class="st">"Sigiloso"</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  nome_favorecido <span class="sc">==</span> <span class="st">"SEM INFORMACAO"</span>   <span class="sc">~</span> <span class="st">"Sem Informação"</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  nome_favorecido <span class="sc">==</span> <span class="st">"NAO SE APLICA"</span>   <span class="sc">~</span> <span class="st">"Não se Aplica"</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  nome_favorecido <span class="sc">==</span> <span class="st">"FOLHA DE PAGAMENTO"</span> <span class="sc">~</span> <span class="st">"Folha de Pagamento"</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">startsWith</span>(codigo_favorecido,<span class="st">"RB"</span>) <span class="sc">~</span> <span class="st">"Intra"</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">startsWith</span>(codigo_favorecido,<span class="st">"TN"</span>) <span class="sc">~</span> <span class="st">"Transferências"</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">startsWith</span>(codigo_favorecido,<span class="st">"EX"</span>) <span class="sc">~</span> <span class="st">"Exterior"</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># podem surgir novas regras no futuro</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">str_detect</span>(nome_favorecido, <span class="st">"BANCO"</span>) <span class="sc">&amp;</span> nome_favorecido <span class="sc">%notin%</span> <span class="fu">c</span>(<span class="st">"AUTO POSTO SABANCO LTDA"</span>, <span class="st">"ASSOCIACAO CRISTA BANCO DA SOLIDARIEDADE"</span>,<span class="st">"FUNDACAO BANCO DE OLHOS DE GOIAS"</span>,<span class="st">"BB-PREVIDENCIA FUNDO DE PENSAO BANCO DO BRASIL"</span>, <span class="st">"CAIXA DE PREVIDENCIA DOS FUNCIONARIOS DO BANCO DO NORDESTE DO BRASIL - CAPEF"</span>, <span class="st">"CAIXA DE PREVIDENCIA DOS FUNCS DO BANCO DO BRASIL"</span>,<span class="st">"BANCO DE OLHOS DE SOROCABA"</span> ) <span class="sc">|</span> nome_favorecido <span class="sc">==</span> <span class="st">"CAIXA ECONOMICA FEDERAL"</span>  <span class="sc">~</span> <span class="st">"Banco"</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">startsWith</span>(nome_favorecido,<span class="st">"BANCO"</span>)   <span class="sc">~</span> <span class="st">"Banco"</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"PJ"</span>                                        ))</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                                            </span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="fu">unique</span>(favorecidos_2023_01<span class="sc">$</span>tipo_favorecido) <span class="sc">%&gt;%</span> <span class="fu">sort</span>() <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="st">"Tipo de Favorecido"</span>)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-tipo_favorecido" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;2: Relação dos Tipos de Favorecidos.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Tipo de Favorecido</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Banco</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Exterior</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Folha de Pagamento</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Intra</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Não se Aplica</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PF</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PJ</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sem Informação</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Sigiloso</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Transferências</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">UG</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+<p>A <a href="#tbl-amostra_favorecido">Tabela&nbsp;3</a> traz uma amostra dos favorecidos por tipo de favorecido.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">9</span>)  </span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>favorecidos_amostra <span class="ot">&lt;-</span> <span class="fu">sample_n</span>(favorecidos_2023_01, <span class="dv">100</span>) </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>favorecidos_amostra <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">!=</span> <span class="st">"PF"</span> <span class="sc">|</span> <span class="fu">startsWith</span>(nome_favorecido,<span class="st">"C"</span>) )<span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">!=</span> <span class="st">"PJ"</span> <span class="sc">|</span> <span class="fu">startsWith</span>(nome_favorecido,<span class="st">"H"</span>) ) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(tipo_favorecido ,nome_favorecido, codigo_favorecido)  <span class="sc">%&gt;%</span> <span class="fu">count</span>()<span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>n)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-amostra_favorecido" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;3: Amostra dos Tipos de Favorecidos.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">tipo_favorecido</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">nome_favorecido</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">codigo_favorecido</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Banco</td>
+<td style="text-align: left;">BANCO DO BRASIL SA</td>
+<td style="text-align: left;">00000000000191</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Exterior</td>
+<td style="text-align: left;">BLU POOL SUPPLY LTD</td>
+<td style="text-align: left;">EXBLUPOSU</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PF</td>
+<td style="text-align: left;">CELIA MARIA TEOFILO DA SILVA</td>
+<td style="text-align: left;">***.449.375-**</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PF</td>
+<td style="text-align: left;">CLAUDIA DE OLIVEIRA UESSLER</td>
+<td style="text-align: left;">***.876.680-**</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PJ</td>
+<td style="text-align: left;">HOSPITAL DE CATAGUASES</td>
+<td style="text-align: left;">19529478000131</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PJ</td>
+<td style="text-align: left;">HYPOFARMA INSTITUTO DE HYPODERMIA E FARMACIA LTDA</td>
+<td style="text-align: left;">17174657000178</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">UG</td>
+<td style="text-align: left;">ALFANDEGA DA RFB PORTO DE SANTOS</td>
+<td style="text-align: left;">170168</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+<p>Para protejer informações pessoais, a variável “codigo_favorecido” da pessoa física (PF) traz apenas parte do CPF. O padrão é ocultar alguns dígitos do CPF (os três primeiros e os dois últimos). Curiosamente, quando trabalhamos com uma base de dados grande é possível existir códigos de favorecidos duplicados. A <a href="#tbl-cpf_repetido">Tabela&nbsp;4</a> ilustra a repetição do “codigo_favorecido”.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="fu">str_detect</span>( codigo_favorecido , <span class="st">"470.444"</span>)) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">nome_favorecido =</span> <span class="fu">str_sub</span>(nome_favorecido, <span class="at">start =</span> 1L, <span class="at">end=</span> 7L )) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(codigo_favorecido, nome_favorecido) <span class="sc">%&gt;%</span> <span class="fu">count</span>() <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(n) <span class="sc">%&gt;%</span> <span class="fu">tail</span>() <span class="sc">%&gt;%</span> <span class="fu">select</span>(codigo_favorecido, nome_favorecido) <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-cpf_repetido" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;4: CPFs Repeditos (codigo_favorecido).</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">codigo_favorecido</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">nome_favorecido</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">***.470.444-**</td>
+<td style="text-align: left;">AMANDA</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">***.470.444-**</td>
+<td style="text-align: left;">LENILDO</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">***.470.444-**</td>
+<td style="text-align: left;">OLIVIA</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">***.470.444-**</td>
+<td style="text-align: left;">VALGIEL</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">***.470.444-**</td>
+<td style="text-align: left;">FRANCIS</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+<p>Para sanar a repetição do código do favorecido, nós vamos criar a variável nome_codigo_favorecido a partir da junção do início do nome e o código do favorecido. A <a href="#tbl-nome_codigo">Tabela&nbsp;5</a> apresenta o resultado para a variável nome_codigo_favorecido.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="ot">&lt;-</span> favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">nome_codigo_favorecido =</span> <span class="fu">paste0</span>(<span class="fu">str_sub</span>( nome_favorecido,<span class="at">start =</span> 1L, <span class="at">end=</span> 7L ), codigo_favorecido))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">==</span> <span class="st">"PF"</span>, <span class="fu">str_detect</span>(codigo_favorecido,<span class="st">"470.444-"</span>) ) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(nome_codigo_favorecido) <span class="sc">%&gt;%</span> <span class="fu">count</span>()  <span class="sc">%&gt;%</span> <span class="fu">head</span>()<span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>n)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-nome_codigo" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;5: Variável nome_codigo_favorecido.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">nome_codigo_favorecido</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">AMANDA ***.470.444-**</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">FRANCIS***.470.444-**</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">LENILDO***.470.444-**</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">OLIVIA ***.470.444-**</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">VALGIEL***.470.444-**</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+<p>Depois da visão geral e dos pequenos ajustes, nós podemos analisar melhor os detalhes sobre os pagadores e sobre os favorecidos.</p>
+</section>
+<section id="tipos-de-pagadores" class="level3">
+<h3 class="anchored" data-anchor-id="tipos-de-pagadores">Tipos de pagadores</h3>
+<p>Há um único tipo de pagador na base de dados. Todos os 2.777 pagadores da base de dados são Unidades Gestoras do Siafi (UGs). A <a href="#tbl-amostra_pagadores">Tabela&nbsp;6</a> traz uma amostra das UGs.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>favorecidos_amostra <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( nome_unidade_gestora, codigo_unidade_gestora) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">%&gt;%</span> <span class="fu">count</span>() <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(n)) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>n)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Nome da UG"</span>, <span class="st">"Código da UG"</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-amostra_pagadores" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;6: Amostra dos Tipos de Pagadores.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Nome da UG</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Código da UG</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">FUND.COORD.DE APERF.DE PESSOAL NIVEL SUPERIOR</td>
+<td style="text-align: right;">154003</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">UNIVERSIDADE FEDERAL DE JUIZ DE FORA</td>
+<td style="text-align: right;">153061</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CENTRO DE INTEND. DA MARINHA EM S.PEDRO DA AL</td>
+<td style="text-align: right;">791181</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CONSELHO NAC DE DESENV CIENT E TECNOLOGICO</td>
+<td style="text-align: right;">364102</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">FUNDACAO IBGE-ADMINISTRACAO CENTRAL/RJ</td>
+<td style="text-align: right;">114601</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">INST.FED.DE EDUC.,CIENC.E TEC.DO ESP.SANTO</td>
+<td style="text-align: right;">158151</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+</section>
+<section id="tipos-de-valor-positivo-ou-negativo" class="level3">
+<h3 class="anchored" data-anchor-id="tipos-de-valor-positivo-ou-negativo">Tipos de valor (positivo ou negativo)</h3>
+<p>Ao mergulhar nos dados, percebemos algo incomum: alguns pagamentos aparecem com valor negativo. A <a href="#tbl-valor_negativo">Tabela&nbsp;7</a> traz alguns dos registros dos valores negativos.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(valor_recebido<span class="sc">&lt;</span><span class="dv">0</span>)<span class="sc">%&gt;%</span> <span class="fu">group_by</span>(nome_unidade_gestora, tipo_favorecido, nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span> <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(valor_recebido) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Unidade Gestora"</span>, <span class="st">"Tipo de Favorecido"</span>, <span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido R$ bi"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>) )</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-valor_negativo" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;7: Valor recebido negativo.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Unidade Gestora</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Tipo de Favorecido</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido R$ bi</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">COORDENACAO-GERAL DE TESOURARIA - CGTES</td>
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">RESGATE DE APLIC. DISPONIB. TN - ADM. DIV. PUBL</td>
+<td style="text-align: right;">-432,6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">COORD.GERAL DE CONTROLE DA DIVIDA PUBLICA</td>
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">RECEBIMENTO DE EMISSAO DE TITULOS</td>
+<td style="text-align: right;">-184,3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">COORDENACAO-GERAL DE TESOURARIA - CGTES</td>
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">PAGAMENTOS DO INSS AO TESOURO NACIONAL</td>
+<td style="text-align: right;">-20,7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">COORDENACAO-GERAL DE TESOURARIA - CGTES</td>
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">PAGAMENTOS DA SUBCONTA PI PARA A SUBCONTA TESOURO</td>
+<td style="text-align: right;">-0,1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">INST.NACIONAL DE EST.E PESQUISAS EDUCACIONAIS</td>
+<td style="text-align: left;">PJ</td>
+<td style="text-align: left;">EMPRESA BRASILEIRA DE CORREIOS E TELEGRAFOS</td>
+<td style="text-align: right;">-0,1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">11 REGIMENTO DE CAVALARIA MECANIZADO</td>
+<td style="text-align: left;">PJ</td>
+<td style="text-align: left;">67 TELECOM LTDA</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">11. DEPOSITO DE SUPRIMENTO</td>
+<td style="text-align: left;">PJ</td>
+<td style="text-align: left;">DEPARTAMENTO DE TRANSITO DO DISTRITO FEDERAL</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">13 GRUPO DE ARTILHARIA DE CAMPANHA</td>
+<td style="text-align: left;">Folha de Pagamento</td>
+<td style="text-align: left;">FOLHA DE PAGAMENTO</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">14 BATALHAO LOGISTICO</td>
+<td style="text-align: left;">PJ</td>
+<td style="text-align: left;">SUPERGASBRAS ENERGIA LTDA</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">15º GRUPO DE ARTILHARIA DE CAMPANHA AP</td>
+<td style="text-align: left;">PJ</td>
+<td style="text-align: left;">DEPARTAMENTO DE TRANSITO DETRAN</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+<p>Depois de analisarmos os registros, percebemos que as transações Intra, ou seja, movimentação de saldo entre entidades do próprio governo, representam quase a totalidade dos valores negativos. Além disso, quando uma ordem bancária é cancelada, o campo valor recebido fica negativo conforme a relação da <a href="#fig-cancelada">Figura&nbsp;3</a>.</p>
+<div id="fig-cancelada" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="favorecidos/print_ob_cancelamento.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figura&nbsp;3: Ordem bancária cancelada</figcaption>
+</figure>
+</div>
+<p>Para facilitar a compreensão dos dados, nós vamos criar a variável saldo_valor para segregar os valores pagos positivos dos negativos.</p>
+<p>Apesar de aparecer valores negativos para praticamente todos os tipos de favorecidos, a <a href="#tbl-saldo_por_tipo_favorecido">Tabela&nbsp;8</a> facilita identificar concentração dos valores negativos para o tipo de favorecido intra.</p>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="ot">&lt;-</span> favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">tipo_saldo =</span> <span class="fu">ifelse</span>(valor_recebido <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="st">"positivo"</span>, <span class="st">"negativo"</span>))</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( tipo_favorecido, tipo_saldo) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span> <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">10000000</span>,<span class="dv">1</span>) ) <span class="sc">%&gt;%</span> <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="st">"tipo_saldo"</span>, <span class="at">values_from =</span> <span class="st">"valor_recebido"</span>)<span class="sc">%&gt;%</span> <span class="fu">replace</span>(<span class="fu">is.na</span>(.), <span class="dv">0</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">saldo=</span>positivo<span class="sc">+</span>negativo) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(saldo)) <span class="sc">%&gt;%</span> <span class="fu">kable</span>( <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>), <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Tipo de Favorecido"</span>, <span class="st">"Valor Negativo"</span>, <span class="st">"Valor Positivo"</span>,<span class="st">"Saldo"</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="tbl-saldo_por_tipo_favorecido" class="anchored">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<caption>Tabela&nbsp;8: Saldo por tipo de favorecido (R$ Mi).</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Tipo de Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Negativo</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Positivo</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Saldo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">UG</td>
+<td style="text-align: right;">0,0</td>
+<td style="text-align: right;">6.072,0</td>
+<td style="text-align: right;">6.072,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Banco</td>
+<td style="text-align: right;">-0,1</td>
+<td style="text-align: right;">3.483,0</td>
+<td style="text-align: right;">3.482,9</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Transferências</td>
+<td style="text-align: right;">0,0</td>
+<td style="text-align: right;">3.394,9</td>
+<td style="text-align: right;">3.394,9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PJ</td>
+<td style="text-align: right;">-10,2</td>
+<td style="text-align: right;">1.932,6</td>
+<td style="text-align: right;">1.922,4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Folha de Pagamento</td>
+<td style="text-align: right;">-0,1</td>
+<td style="text-align: right;">1.066,6</td>
+<td style="text-align: right;">1.066,5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Exterior</td>
+<td style="text-align: right;">0,0</td>
+<td style="text-align: right;">238,8</td>
+<td style="text-align: right;">238,8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PF</td>
+<td style="text-align: right;">-0,4</td>
+<td style="text-align: right;">47,3</td>
+<td style="text-align: right;">46,9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sigiloso</td>
+<td style="text-align: right;">0,0</td>
+<td style="text-align: right;">16,3</td>
+<td style="text-align: right;">16,3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Sem Informação</td>
+<td style="text-align: right;">-0,3</td>
+<td style="text-align: right;">1,0</td>
+<td style="text-align: right;">0,7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Não se Aplica</td>
+<td style="text-align: right;">0,0</td>
+<td style="text-align: right;">0,0</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Intra</td>
+<td style="text-align: right;">-63.758,3</td>
+<td style="text-align: right;">57.055,2</td>
+<td style="text-align: right;">-6.703,1</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+</div>
+</div>
+</section>
+</section>
+<section id="quem-recebe-favorecido" class="level2">
+<h2 class="anchored" data-anchor-id="quem-recebe-favorecido">Quem recebe (favorecido)</h2>
+<p>A base de dados traz o favorecido da ordem bancária, que não é necessariamente o destinatário final do recurso. Por exemplo, no caso de pagamento de transferências constitucionais aos municípios, a unidade gestora pode fazer uma única ordem bancária para o Banco do Brasil que, por sua vez, distribui o valor total entre os municípios.</p>
+<p>A <a href="#fig-intermediario">Figura&nbsp;4</a> ilustra a situação do “intermediário financeiro”. O Banco do Brasil recebeu R$ 425 milhões via a ordem bancária 2023OB8000186 e depois repassou os recursos para municípios (confira: <a href="https://portaldatransparencia.gov.br/despesas/pagamento/257001000012023OB800186?ordenarPor=fase&amp;direcao=desc">favorecidos da OB</a>).</p>
+<div id="fig-intermediario" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="favorecidos/ob_bb_intermediario.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figura&nbsp;4: Intermediário financeiro</figcaption>
+</figure>
+</div>
+<p>A <a href="#fig-favorecido_final">Figura&nbsp;5</a> lista os favorecidos finais da ordem bancária 2023OB8000186.</p>
+<div id="fig-favorecido_final" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="favorecidos/ob_favorecido_final.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figura&nbsp;5: Favorecidos finais da ordem bancaria</figcaption>
+</figure>
+</div>
+<p>Quando analisarmos os favorecidos é bom relebrar o fato de alguns deles atuarem como repassadores dos recursos para os beneficiários finais.</p>
+<section id="por-tipo-de-favorecidos" class="level3">
+<h3 class="anchored" data-anchor-id="por-tipo-de-favorecidos">Por Tipo de Favorecidos</h3>
+<p>A <a href="#tbl-tipo_favorecido">Tabela&nbsp;2</a> traz o tipo de favorecido classificado pelo valor recebido em R$ bilhões. Como alertamos anteiormente, os favorecidos são os favorecidos da ordem bancário e não necessariamente os favorecidos finais.</p>
+<p>Alguns pontos se destacam, por exemplo, o total</p>
+<section id="banco" class="level4">
+<h4 class="anchored" data-anchor-id="banco">Banco</h4>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">==</span> <span class="st">"Banco"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span>  <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(valor_recebido)) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido (R$ bi)"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido (R$ bi)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">BANCO DO BRASIL SA</td>
+<td style="text-align: right;">20,8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CAIXA ECONOMICA FEDERAL</td>
+<td style="text-align: right;">6,6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO NACIONAL DE DESENVOLVIMENTO ECONOMICO E SOCIAL</td>
+<td style="text-align: right;">2,9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO DA AMAZONIA SA</td>
+<td style="text-align: right;">1,2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO DO NORDESTE DO BRASIL SA</td>
+<td style="text-align: right;">1,2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO SANTANDER (BRASIL) S.A.</td>
+<td style="text-align: right;">0,6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BRB BANCO DE BRASILIA SA</td>
+<td style="text-align: right;">0,5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ITAU UNIBANCO S.A.</td>
+<td style="text-align: right;">0,4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO BRADESCO S.A.</td>
+<td style="text-align: right;">0,2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO COOPERATIVO SICOOB S.A.</td>
+<td style="text-align: right;">0,1</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</section>
+<section id="exterior" class="level4">
+<h4 class="anchored" data-anchor-id="exterior">Exterior</h4>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">==</span> <span class="st">"Exterior"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span>  <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(valor_recebido)) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido (R$ mi)"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido (R$ mi)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">PFIZER EXPORT BV</td>
+<td style="text-align: right;">1.982,8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GLAXOSMITHKLINE EXPORT LIMITED</td>
+<td style="text-align: right;">109,4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">U.S. GOVERNMENT</td>
+<td style="text-align: right;">23,6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NAVAL GROUP SITE DE CHERBOURG</td>
+<td style="text-align: right;">22,9</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BID</td>
+<td style="text-align: right;">19,2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ARES TRADING URUGUAY S A</td>
+<td style="text-align: right;">15,2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TAKEDA PHARMACEUTICALS INTERNATIONAL AG</td>
+<td style="text-align: right;">10,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CEBW - RETRIEX</td>
+<td style="text-align: right;">9,4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EMBRAER NETHERLANDS B.V</td>
+<td style="text-align: right;">9,1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MARTIN BAKER AIRCRAFT CO. LTD</td>
+<td style="text-align: right;">5,9</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</section>
+<section id="intra" class="level4">
+<h4 class="anchored" data-anchor-id="intra">Intra</h4>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">==</span> <span class="st">"Intra"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span>  <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(valor_recebido))  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido (R$ bi)"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido (R$ bi)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">PAGAMENTO DA DIVIDA INTERNA</td>
+<td style="text-align: right;">424,7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PAGAMENTOS DO TESOURO AO INSS</td>
+<td style="text-align: right;">62,8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PAGAMENTO DE BENEFICIOS - INSS/FRGPS</td>
+<td style="text-align: right;">62,5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CAIXA ECONOMICA FEDERAL - AGENTE OPERADOR DO PAB</td>
+<td style="text-align: right;">12,7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MOVIMENTACOES DE CONCILICACAO DO SPB</td>
+<td style="text-align: right;">5,1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RESTITUICAO DE TRIBUTOS FEDERAIS - RFB</td>
+<td style="text-align: right;">1,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PAGAMENTOS DA SUBCONTA TESOURO PARA A SUBCONTA PI</td>
+<td style="text-align: right;">0,8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PAGAMENTO IMPOSTO DE RENDA PESSOA FICIA - IRPF</td>
+<td style="text-align: right;">0,4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PAGAMENTOS DE DIVIDA EXTERNA</td>
+<td style="text-align: right;">0,4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PAGAMENTO AO BANCO CENTRAL</td>
+<td style="text-align: right;">0,3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO CENTRAL DO BRASIL</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CAIXA ECONOMICA FEDERAL - AG.OPERADORA PBF</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PAGAMENTOS DA SUBCONTA PI PARA A SUBCONTA TESOURO</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PAGAMENTOS PIX COM LISTA</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PAGTO CONSIGNACAO</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PAGAMENTOS DO INSS AO TESOURO NACIONAL</td>
+<td style="text-align: right;">-20,7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RECEBIMENTO DE EMISSAO DE TITULOS</td>
+<td style="text-align: right;">-184,3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RESGATE DE APLIC. DISPONIB. TN - ADM. DIV. PUBL</td>
+<td style="text-align: right;">-432,6</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</section>
+<section id="pf" class="level4">
+<h4 class="anchored" data-anchor-id="pf">PF</h4>
+</section>
+<section id="pj" class="level4">
+<h4 class="anchored" data-anchor-id="pj">PJ</h4>
+</section>
+<section id="sigiloso" class="level4">
+<h4 class="anchored" data-anchor-id="sigiloso">Sigiloso</h4>
+</section>
+<section id="transferências" class="level4">
+<h4 class="anchored" data-anchor-id="transferências">Transferências</h4>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">==</span> <span class="st">"Transferências"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span>  <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(valor_recebido))  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido (R$ bi)"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido (R$ bi)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">FUNDOS DE PARTICIPACAO - FPM E FPE</td>
+<td style="text-align: right;">29,1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">DEPOSITOS ROYALTIES PETROLEO</td>
+<td style="text-align: right;">2,8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">IPI EXPORTACAO</td>
+<td style="text-align: right;">0,5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">COTAS PARTES COMPENS. FINANCEIRAS - RECURSOS MINERAIS</td>
+<td style="text-align: right;">0,4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ROYALTIES DE PETROLEO - FEP</td>
+<td style="text-align: right;">0,4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">LEI KANDIR - LC 87/96</td>
+<td style="text-align: right;">0,3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">COTAS PARTES-COMPENS.FINANCEIRA - RECURSOS HIDRICOS</td>
+<td style="text-align: right;">0,1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ISS MUNICIPIOS - DAR</td>
+<td style="text-align: right;">0,1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ITR - MUNICIPIOS</td>
+<td style="text-align: right;">0,1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ROYALTIES ITAIPU</td>
+<td style="text-align: right;">0,1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CIDE COMBUSTIVEIS</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ICMS ESTADOS - DAR</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">IOF-OURO ESTADOS/MUNICIPIOS</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">LEI NR. 8.727/93 - BANCO DO BRASIL - DEMAIS CREDORES</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ROYALTIES DE PETROLEO/PARTICIPACOES ESPECIAIS</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TRANFERENCIA AO BB - OB SAQUE CARTAO</td>
+<td style="text-align: right;">0,0</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</section>
+<section id="ug" class="level4">
+<h4 class="anchored" data-anchor-id="ug">UG</h4>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">==</span> <span class="st">"UG"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span>  <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(valor_recebido)) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido (R$ bi)"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido (R$ bi)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">COORDENACAO-GERAL DE TESOURARIA - CGTES</td>
+<td style="text-align: right;">33,6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">COORD.GERAL DE CONTROLE DA DIVIDA PUBLICA</td>
+<td style="text-align: right;">14,5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">COORD-GERAL DE RECURSOS DO FAT - CGFAT</td>
+<td style="text-align: right;">4,9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">COORDENACAO DE ORCAMENTO E FINANCAS DO FRGPS</td>
+<td style="text-align: right;">1,0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CENTRO DE PAGAMENTO DO EXERCITO</td>
+<td style="text-align: right;">0,8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SECRETARIA DE ECON. E FIN.DA AER.- F.AER.</td>
+<td style="text-align: right;">0,5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">COORDENACAO-GERAL DE GESTAO DE PESSOAS</td>
+<td style="text-align: right;">0,4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PAGADORIA DE PESSOAL DA MARINHA - PAPEM-PAIS</td>
+<td style="text-align: right;">0,4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">COORDENACAO-GERAL DE GESTAO DE PESSOAS - MF</td>
+<td style="text-align: right;">0,3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EMPRESA BRASILEIRA DE SERVICOS HOSPITALARES</td>
+<td style="text-align: right;">0,3</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</section>
+<section id="folha-de-pagamento-e-sigilosos" class="level4">
+<h4 class="anchored" data-anchor-id="folha-de-pagamento-e-sigilosos">Folha de Pagamento e Sigilosos</h4>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">%in%</span> <span class="fu">c</span>( <span class="st">"Sigiloso"</span>,<span class="st">"Folha de Pagamento"</span>) )<span class="sc">%&gt;%</span> <span class="fu">group_by</span>( nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span>  <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(valor_recebido)) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido (R$ bi)"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido (R$ bi)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">FOLHA DE PAGAMENTO</td>
+<td style="text-align: right;">10,7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sigiloso</td>
+<td style="text-align: right;">0,2</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</section>
+</section>
+<section id="top-favorecidos" class="level3">
+<h3 class="anchored" data-anchor-id="top-favorecidos">Top favorecidos</h3>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01  <span class="sc">%&gt;%</span> <span class="fu">group_by</span>( tipo_favorecido, nome_favorecido) <span class="sc">%&gt;%</span>  <span class="fu">summarise</span>(<span class="at">valor_recebido =</span>  <span class="fu">round</span>(<span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(valor_recebido)) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>)  <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Tipo do Favorecido"</span>, <span class="st">"Favorecido"</span>, <span class="st">"Valor Recebido (R$ bi)"</span>), <span class="at">digits =</span> <span class="dv">1</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">"."</span>, <span class="at">decimal.mark =</span> <span class="st">","</span>))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Tipo do Favorecido</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor Recebido (R$ bi)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">PAGAMENTO DA DIVIDA INTERNA</td>
+<td style="text-align: right;">424,7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">PAGAMENTOS DO TESOURO AO INSS</td>
+<td style="text-align: right;">62,8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">PAGAMENTO DE BENEFICIOS - INSS/FRGPS</td>
+<td style="text-align: right;">62,5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">UG</td>
+<td style="text-align: left;">COORDENACAO-GERAL DE TESOURARIA - CGTES</td>
+<td style="text-align: right;">33,6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Transferências</td>
+<td style="text-align: left;">FUNDOS DE PARTICIPACAO - FPM E FPE</td>
+<td style="text-align: right;">29,1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Banco</td>
+<td style="text-align: left;">BANCO DO BRASIL SA</td>
+<td style="text-align: right;">20,8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">UG</td>
+<td style="text-align: left;">COORD.GERAL DE CONTROLE DA DIVIDA PUBLICA</td>
+<td style="text-align: right;">14,5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Intra</td>
+<td style="text-align: left;">CAIXA ECONOMICA FEDERAL - AGENTE OPERADOR DO PAB</td>
+<td style="text-align: right;">12,7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Folha de Pagamento</td>
+<td style="text-align: left;">FOLHA DE PAGAMENTO</td>
+<td style="text-align: right;">10,7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Banco</td>
+<td style="text-align: left;">CAIXA ECONOMICA FEDERAL</td>
+<td style="text-align: right;">6,6</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</section>
+<section id="por-uf" class="level3">
+<h3 class="anchored" data-anchor-id="por-uf">Por UF</h3>
+</section>
+<section id="por-município" class="level3">
+<h3 class="anchored" data-anchor-id="por-município">Por Município</h3>
+</section>
+</section>
+<section id="quem-paga" class="level2">
+<h2 class="anchored" data-anchor-id="quem-paga">Quem paga</h2>
+<section id="por-uf-1" class="level3">
+<h3 class="anchored" data-anchor-id="por-uf-1">Por UF</h3>
+</section>
+<section id="por-município-1" class="level3">
+<h3 class="anchored" data-anchor-id="por-município-1">Por Município</h3>
+</section>
+<section id="por-tipo" class="level3">
+<h3 class="anchored" data-anchor-id="por-tipo">Por Tipo</h3>
+</section>
+<section id="top-pagadores" class="level3">
+<h3 class="anchored" data-anchor-id="top-pagadores">Top pagadores</h3>
+</section>
+</section>
+<section id="vinculando-pagador-ao-favorecido" class="level2">
+<h2 class="anchored" data-anchor-id="vinculando-pagador-ao-favorecido">Vinculando pagador ao favorecido</h2>
+<section id="vinculando-por-uf" class="level3">
+<h3 class="anchored" data-anchor-id="vinculando-por-uf">Vinculando por UF</h3>
+</section>
+<section id="vinculando-por-município" class="level3">
+<h3 class="anchored" data-anchor-id="vinculando-por-município">Vinculando por Município</h3>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span> (tipo_favorecido <span class="sc">%notin%</span> <span class="fu">c</span>(<span class="st">"Intra"</span>,<span class="st">"UG"</span>, <span class="st">"Transferências"</span>, <span class="st">"Exterior"</span> , <span class="st">"Sigiloso"</span>, <span class="st">"Banco"</span>, <span class="st">"Folha de Pagamento"</span>))<span class="sc">%&gt;%</span> <span class="fu">group_by</span>(sigla_uf) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">valor =</span> <span class="fu">sum</span>(valor_recebido)<span class="sc">/</span><span class="dv">1000000000</span>) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(<span class="fu">desc</span> (valor)) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">100</span>) <span class="sc">%&gt;%</span>  <span class="fu">kable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">sigla_uf</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">valor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">SP</td>
+<td style="text-align: right;">4.2215154</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">DF</td>
+<td style="text-align: right;">3.3296832</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RJ</td>
+<td style="text-align: right;">3.1710333</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MG</td>
+<td style="text-align: right;">1.5528328</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RS</td>
+<td style="text-align: right;">0.8976866</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PR</td>
+<td style="text-align: right;">0.7811756</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BA</td>
+<td style="text-align: right;">0.7237261</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PE</td>
+<td style="text-align: right;">0.5992638</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SC</td>
+<td style="text-align: right;">0.5594321</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CE</td>
+<td style="text-align: right;">0.5312324</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">GO</td>
+<td style="text-align: right;">0.4815715</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PA</td>
+<td style="text-align: right;">0.3785599</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MA</td>
+<td style="text-align: right;">0.3560432</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PI</td>
+<td style="text-align: right;">0.2188401</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ES</td>
+<td style="text-align: right;">0.2177525</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PB</td>
+<td style="text-align: right;">0.2140441</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AM</td>
+<td style="text-align: right;">0.2101156</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RN</td>
+<td style="text-align: right;">0.2083563</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MS</td>
+<td style="text-align: right;">0.2061556</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MT</td>
+<td style="text-align: right;">0.1934874</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AL</td>
+<td style="text-align: right;">0.1658978</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SE</td>
+<td style="text-align: right;">0.1119159</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TO</td>
+<td style="text-align: right;">0.0961822</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RO</td>
+<td style="text-align: right;">0.0927103</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AP</td>
+<td style="text-align: right;">0.0641537</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">AC</td>
+<td style="text-align: right;">0.0597253</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RR</td>
+<td style="text-align: right;">0.0576165</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">-1</td>
+<td style="text-align: right;">0.0000258</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(tipo_favorecido <span class="sc">==</span> <span class="st">"Banco"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(nome_favorecido) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">valor =</span> <span class="fu">sum</span>(valor_recebido)) <span class="sc">%&gt;%</span> <span class="fu">kable</span>())</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">nome_favorecido</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">valor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">BANCO ABC BRASIL S.A.</td>
+<td style="text-align: right;">6.590816e+06</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO AGIBANK S.A</td>
+<td style="text-align: right;">1.231000e+04</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO ALFA S.A.</td>
+<td style="text-align: right;">4.598372e+04</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO ARBI S/A</td>
+<td style="text-align: right;">0.000000e+00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO BARI DE INVESTIMENTOS E FINANCIAMENTOS S.A.</td>
+<td style="text-align: right;">4.234480e+03</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO BMG S.A</td>
+<td style="text-align: right;">2.355147e+05</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO BRADESCARD S.A.</td>
+<td style="text-align: right;">0.000000e+00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO BRADESCO FINANCIAMENTOS S.A.</td>
+<td style="text-align: right;">1.032278e+05</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO BRADESCO S.A.</td>
+<td style="text-align: right;">2.484361e+08</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO BTG PACTUAL S.A.</td>
+<td style="text-align: right;">3.749832e+07</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO C6 CONSIGNADO S.A.</td>
+<td style="text-align: right;">2.997526e+04</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO CETELEM S.A.</td>
+<td style="text-align: right;">8.581248e+04</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO COOPERATIVO SICOOB S.A.</td>
+<td style="text-align: right;">5.909686e+07</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO COOPERATIVO SICREDI S.A.</td>
+<td style="text-align: right;">1.268058e+08</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO CREFISA S.A.</td>
+<td style="text-align: right;">1.292559e+07</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO CRUZEIRO DO SUL S.A. - FALIDO</td>
+<td style="text-align: right;">1.219200e+02</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO DA AMAZONIA SA</td>
+<td style="text-align: right;">1.189405e+09</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO DAYCOVAL S.A.</td>
+<td style="text-align: right;">1.467468e+05</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO DE DESENVOLVIMENTO DE MINAS GERAIS S.A. - BDMG</td>
+<td style="text-align: right;">6.590816e+06</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO DE LA NACION ARGENTINA</td>
+<td style="text-align: right;">9.837400e+02</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO DE OLHOS DE SOROCABA</td>
+<td style="text-align: right;">3.088477e+05</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO DO BRASIL SA</td>
+<td style="text-align: right;">2.083823e+10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO DO ESTADO DE SERGIPE S/A</td>
+<td style="text-align: right;">5.532201e+04</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO DO ESTADO DO PARA S A</td>
+<td style="text-align: right;">1.892678e+07</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO DO ESTADO DO RIO GRANDE DO SUL SA</td>
+<td style="text-align: right;">5.268335e+07</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO DO NORDESTE DO BRASIL SA</td>
+<td style="text-align: right;">1.193312e+09</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO INBURSA S.A.</td>
+<td style="text-align: right;">7.147480e+03</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO INTER S.A</td>
+<td style="text-align: right;">2.547178e+05</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO ITAU CONSIGNADO S.A.</td>
+<td style="text-align: right;">6.134163e+05</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO MASTER S/A</td>
+<td style="text-align: right;">1.372960e+04</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO NACIONAL DE DESENVOLVIMENTO ECONOMICO E SOCIAL</td>
+<td style="text-align: right;">2.927725e+09</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO OLE CONSIGNADO S.A.</td>
+<td style="text-align: right;">1.657410e+03</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO PAN S.A.</td>
+<td style="text-align: right;">6.181980e+07</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO PAULISTA S.A.</td>
+<td style="text-align: right;">1.256800e+02</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO RABOBANK INTERNATIONAL BRASIL S/A</td>
+<td style="text-align: right;">2.946667e+06</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO RIBEIRAO PRETO S/A</td>
+<td style="text-align: right;">2.946667e+06</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO RURAL S.A - EM LIQUIDACAO EXTRAJUDICIAL</td>
+<td style="text-align: right;">1.243340e+03</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO SAFRA S A</td>
+<td style="text-align: right;">3.812425e+04</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO SANTANDER (BRASIL) S.A.</td>
+<td style="text-align: right;">5.846784e+08</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCO VOTORANTIM S.A.</td>
+<td style="text-align: right;">1.330250e+03</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANCO XP S.A</td>
+<td style="text-align: right;">2.106537e+04</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BANCOSEGURO S.A.</td>
+<td style="text-align: right;">1.018764e+04</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BANESTES SA BANCO DO ESTADO DO ESPIRITO SANTO</td>
+<td style="text-align: right;">1.236720e+05</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BNI - BANCO DE NEGOCIOS IMOBILIARIOS LTDA</td>
+<td style="text-align: right;">7.404480e+03</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BRB BANCO DE BRASILIA SA</td>
+<td style="text-align: right;">4.688001e+08</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CAIXA ECONOMICA FEDERAL</td>
+<td style="text-align: right;">6.591671e+09</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CHINA CONSTRUCTION BANK (BRASIL) BANCO MULTIPLO S/A</td>
+<td style="text-align: right;">3.089612e+04</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ITAU UNIBANCO S.A.</td>
+<td style="text-align: right;">3.955762e+08</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PARANA BANCO S/A</td>
+<td style="text-align: right;">1.128055e+05</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>favorecidos_2023_01 <span class="ot">&lt;-</span> favorecidos_2023_01 <span class="sc">%&gt;%</span> </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">rename</span>( <span class="st">"uf_favorecido"</span> <span class="ot">=</span> <span class="st">"sigla_uf"</span>)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>siafirelatoriounidadesgestoras <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"favorecidos/siafirelatoriounidadesgestoras.csv"</span>) <span class="sc">%&gt;%</span> <span class="fu">clean_names</span>() </span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>siafirelatoriounidadesgestoras <span class="ot">&lt;-</span> siafirelatoriounidadesgestoras <span class="sc">%&gt;%</span> </span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>       <span class="fu">rename</span>(<span class="st">"uf_ug"</span> <span class="ot">=</span> <span class="st">"uf"</span>)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>network_ug_uf <span class="ot">&lt;-</span> <span class="fu">left_join</span>( favorecidos_2023_01 <span class="sc">%&gt;%</span> <span class="fu">filter</span> (tipo_favorecido <span class="sc">%in%</span> <span class="fu">c</span>( <span class="st">"PJ"</span>))<span class="sc">%&gt;%</span> <span class="fu">group_by</span>(uf_favorecido, nome_orgao, nome_orgao_superior,nome_municipio, nome_unidade_gestora ,codigo_unidade_gestora) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">valor =</span> <span class="fu">sum</span>(valor_recebido)), siafirelatoriounidadesgestoras <span class="sc">%&gt;%</span> <span class="fu">select</span>(ug,uf_ug), <span class="at">by =</span> <span class="fu">c</span> (<span class="st">"codigo_unidade_gestora"</span> <span class="ot">=</span> <span class="st">"ug"</span>))</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>network_ug_uf <span class="ot">&lt;-</span> network_ug_uf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">destino =</span> <span class="fu">ifelse</span>(uf_ug<span class="sc">==</span> uf_favorecido, <span class="st">"interno"</span>,<span class="st">"externo"</span>))</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>network_ug_uf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(uf_ug <span class="sc">!=</span> <span class="st">"DF"</span>, uf_favorecido <span class="sc">!=</span> <span class="st">"DF"</span>)<span class="sc">%&gt;%</span> <span class="fu">group_by</span>(uf_ug,destino) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">valor =</span> <span class="fu">sum</span>(valor)<span class="sc">/</span><span class="dv">1000000000</span>) <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">uf_ug</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">destino</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">valor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">AC</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0022834</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">AC</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0052469</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AL</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0058171</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">AL</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0132359</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AM</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0255885</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">AM</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0394526</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AP</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0018746</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">AP</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0037845</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BA</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0224830</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BA</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0457820</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CE</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0121236</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CE</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0255547</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ES</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0378889</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ES</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0154791</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">GO</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0112004</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GO</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0156778</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MA</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0128914</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MA</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0291276</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MG</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0569148</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MG</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.1089918</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MS</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0112519</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MS</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0286300</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MT</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0111171</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MT</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0114069</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PA</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0116543</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PA</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0295876</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PB</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0104174</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PB</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0118624</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PE</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0541812</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PE</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0307819</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PI</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0228585</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PI</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0105306</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PR</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0150884</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PR</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0753907</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RJ</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.3391797</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RJ</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.4543346</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RN</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0150449</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RN</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0142353</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RO</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0053180</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RO</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0045266</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RR</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0033062</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RR</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0163997</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RS</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0541338</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RS</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.2072391</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SC</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0157671</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SC</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0520626</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SE</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0061542</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SE</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0070626</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SP</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.1337753</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SP</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.2975376</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TO</td>
+<td style="text-align: left;">externo</td>
+<td style="text-align: right;">0.0039427</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TO</td>
+<td style="text-align: left;">interno</td>
+<td style="text-align: right;">0.0067875</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>teste <span class="ot">&lt;-</span> network_ug_uf<span class="sc">%&gt;%</span> <span class="fu">filter</span>(uf_favorecido <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span>, uf_ug <span class="sc">!=</span> <span class="st">"DF"</span>, uf_favorecido <span class="sc">!=</span> <span class="st">"DF"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(uf_favorecido,uf_ug) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">valor =</span> <span class="fu">sum</span>(valor<span class="sc">/</span><span class="dv">1000000</span>)) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(uf_ug <span class="sc">==</span> <span class="st">"ES"</span>)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(networkD3)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>teste <span class="ot">&lt;-</span> network_ug_uf<span class="sc">%&gt;%</span> <span class="fu">filter</span>(uf_favorecido <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span>, uf_ug <span class="sc">!=</span> <span class="st">"DF"</span>, uf_favorecido <span class="sc">!=</span> <span class="st">"DF"</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(uf_favorecido,uf_ug) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">valor =</span> <span class="fu">sum</span>(valor<span class="sc">/</span><span class="dv">1000000</span>)) </span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>uf_nome <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">unique</span>(teste<span class="sc">$</span>uf_favorecido))</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>uf_node <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span><span class="sc">:</span>(<span class="fu">length</span>(uf_nome)<span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>df_uf <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(uf_nome, uf_node)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>df_ug_pagadora <span class="ot">&lt;-</span> <span class="fu">left_join</span>(teste <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>uf_favorecido), df_uf , <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"uf_ug"</span> <span class="ot">=</span> <span class="st">"uf_nome"</span>))</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>df_ug_pagadora <span class="ot">&lt;-</span> df_ug_pagadora <span class="sc">%&gt;%</span> </span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>       <span class="fu">rename</span>( <span class="st">"uf_ug_node"</span> <span class="ot">=</span> <span class="st">"uf_node"</span>)</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>df_uf_favorecido <span class="ot">&lt;-</span> <span class="fu">left_join</span>(teste <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>uf_ug), df_uf , <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"uf_favorecido"</span><span class="ot">=</span><span class="st">"uf_nome"</span>))</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>df_uf_favorecido <span class="ot">&lt;-</span> df_uf_favorecido <span class="sc">%&gt;%</span> </span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>       <span class="fu">rename</span>( <span class="st">"uf_favorecido_node"</span> <span class="ot">=</span> <span class="st">"uf_node"</span>) </span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>df_final <span class="ot">&lt;-</span> <span class="fu">cbind</span>(df_ug_pagadora, df_uf_favorecido <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>valor, <span class="sc">-</span> uf_favorecido))</span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>df_final <span class="ot">&lt;-</span> df_final <span class="sc">%&gt;%</span> <span class="fu">rename</span>(</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">"uf_favorecido"</span> <span class="ot">=</span> <span class="st">"uf_favorecido...1"</span></span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span> uf_favorecido...<span class="dv">5</span>)</span>
+<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a>df_final <span class="ot">&lt;-</span> df_final <span class="sc">%&gt;%</span> <span class="fu">relocate</span>(valor, <span class="at">.after=</span>uf_favorecido_node) <span class="sc">%&gt;%</span> <span class="fu">relocate</span>(uf_favorecido, <span class="at">.after=</span>uf_ug)</span>
+<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a>links <span class="ot">&lt;-</span> df_final <span class="sc">%&gt;%</span> <span class="fu">select</span>(uf_ug_node, uf_favorecido_node, valor) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(valor<span class="sc">&gt;</span><span class="dv">0</span>)</span>
+<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(links) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"source"</span>, <span class="st">"target"</span>, <span class="st">"value"</span>)</span>
+<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a>nodes <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(df_uf <span class="sc">%&gt;%</span> <span class="fu">select</span>(uf_nome))</span>
+<span id="cb26-37"><a href="#cb26-37" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb26-38"><a href="#cb26-38" aria-hidden="true" tabindex="-1"></a><span class="co"># sankeyNetwork(Links = links, Nodes = nodes,</span></span>
+<span id="cb26-39"><a href="#cb26-39" aria-hidden="true" tabindex="-1"></a><span class="co">#  Source = "source", Target = "target",</span></span>
+<span id="cb26-40"><a href="#cb26-40" aria-hidden="true" tabindex="-1"></a><span class="co">#  Value = "value", NodeID = "uf_nome",</span></span>
+<span id="cb26-41"><a href="#cb26-41" aria-hidden="true" tabindex="-1"></a><span class="co">#  fontSize= 12, nodeWidth = 30)</span></span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details>
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>planilhas_favorecidos <span class="ot">&lt;-</span> <span class="fu">str_subset</span>(<span class="fu">list.files</span>(<span class="at">path =</span> <span class="st">"./cnpj"</span>),<span class="st">"cnpj"</span>)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copiada");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copiada");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
