@@ -235,9 +235,9 @@ favorecidos_2023_01 <- favorecidos_2023_01 %>%
                "municipio_favorecido" = "nome_municipio",
                "uf_ug_pagadora" = "uge_uf_sigla",
                "municipio_ug_pagadora" = "uge_municipio_nome")
-```
 
-<https://www.tesourotransparente.gov.br/ckan/dataset/siafi-relatorio-unidades-gestoras>
+
+```
 
 #### Favorecido detalhado por UF e Município
 
@@ -267,12 +267,29 @@ favorecidos_2023_01  %>% group_by( uf_ug_pagadora, municipio_ug_pagadora ) %>%co
 
 #### Latitude e Longitude
 
+<https://www.tesourotransparente.gov.br/ckan/dataset/lista-de-municipios-do-siafi>
+
 ```{r latitude_longitude}
+
+
+# lista_ugs <- read_excel("favorecidos/lista_ugs.xlsx") %>% clean_names()
+
+
 municipios <- read_csv("municipios.csv")
+
+# municipios <-  municipios %>% mutate(municipio = as.character(municipio))
+
+municipios <- municipios %>% mutate (muni_uf = paste0(str_to_upper(name)," - ", uf_code) )
 
 municipios <- municipios %>% mutate (muni_uf_favorecido = paste0(str_to_upper(name)," - ", uf_code) )
 
 municipios <- municipios %>% mutate(muni_uf_pagadora = paste0( str_to_upper(no_accents), " - ",uf_code))
+
+
+# municipios <- left_join(municipios %>%  select(municipio, muni_uf, lat, lon), lista_ugs %>% select(ug_executora_codigo, uge_municipio_codigo_ibge), by = c( "municipio"= "uge_municipio_codigo_ibge"))
+# 
+# favorecidos_2023_01 <-  favorecidos_2023_01 %>% mutate(codigo_unidade_gestora = as.character(codigo_unidade_gestora))
+
 
 favorecidos_2023_01 <- favorecidos_2023_01 %>% mutate (muni_uf_favorecido = paste0( municipio_favorecido," - ", uf_favorecido) )
 
@@ -499,11 +516,14 @@ favorecidos_2023_01 %>% filter(valor_recebido>0) %>% group_by(municipio_ug_pagad
 ### Vinculando por UF
 
 ```{r uf_pagadora_ufs_recebedoras}
-favorecidos_2023_01%>% filter(uf_ug_pagadora == "ES")  %>% group_by(uf_favorecido,uf_ug_pagadora) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000,1)) %>% arrange(desc(valor_recebido)) %>% head(10) %>% relocate(uf_favorecido, .after = uf_ug_pagadora) %>% kable(col.names = c("UF Pagadora", "UF do Favorecido", "Valor Recebido (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+
+local_cidade <- "RECIFE - PE"
+
+favorecidos_2023_01%>% filter(uf_ug_pagadora == str_sub( local_cidade, start = -2L, end = -1L))  %>% group_by(uf_favorecido,uf_ug_pagadora) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000,1)) %>% arrange(desc(valor_recebido)) %>% head(10) %>% relocate(uf_favorecido, .after = uf_ug_pagadora) %>% kable(col.names = c("UF Pagadora", "UF do Favorecido", "Valor Recebido (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 ```{r ufS_pagadora_uf_recebedora}
-favorecidos_2023_01%>% filter(uf_ug_pagadora == "MG")  %>% group_by(uf_favorecido,uf_ug_pagadora) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000,1)) %>% arrange(desc(valor_recebido)) %>% head(10) %>% relocate(uf_favorecido, .after = uf_ug_pagadora) %>% kable(col.names = c("UF Pagadora", "UF do Favorecido", "Valor Recebido (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+favorecidos_2023_01%>% filter(uf_favorecido == str_sub(local_cidade, start = -2L, end = -1L))  %>% group_by(uf_favorecido,uf_ug_pagadora) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000,1)) %>% arrange(desc(valor_recebido)) %>% head(10) %>% relocate(uf_favorecido, .after = uf_ug_pagadora) %>% kable(col.names = c("UF Pagadora", "UF do Favorecido", "Valor Recebido (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 ### Vinculando por Município
@@ -514,14 +534,12 @@ favorecidos_2023_01%>% filter(uf_ug_pagadora == "MG")  %>% group_by(uf_favorecid
 #| error: false
 
 
-local_cidade <- "RECIFE - PE"
-
-um_pagador_varios_favorecidos <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_pagadora == local_cidade) %>% group_by(muni_uf_favorecido, municipio_ug_pagadora) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios)
-
-#recife <- left_join(recife, all_muni,  by = c("municipio" = "code_muni"))
 
 
-varios_pagadores_um_favorecido <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, municipio_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios)
+um_pagador_varios_favorecidos <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_pagadora == local_cidade) %>% group_by(muni_uf_favorecido, muni_uf_pagadora) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf_favorecido))
+
+
+varios_pagadores_um_favorecido <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, muni_uf_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf_pagadora))
 
   
 
@@ -539,7 +557,7 @@ varios_pagadores_um_favorecido <- left_join(  favorecidos_2023_01%>% filter(tipo
 
 
 
-favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_pagadora == local_cidade) %>% group_by( municipio_ug_pagadora, muni_uf_favorecido)%>% summarise(valor_recebido = sum(valor_recebido))%>% arrange(desc(valor_recebido)) %>% head(10) %>% kable(col.names = c("Município UG Pagadora", "Município do Favorecido", "Valor Recebido (R$)"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))%>%
+favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_pagadora == local_cidade) %>% group_by( muni_uf_pagadora, muni_uf_favorecido)%>% summarise(valor_recebido = sum(valor_recebido))%>% arrange(desc(valor_recebido)) %>% head(10) %>% kable(col.names = c("Município Pagador", "Município do Favorecido", "Valor Recebido (R$)"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))%>%
   kable_styling(font_size = 9)
 
 
@@ -553,7 +571,7 @@ favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_pagadora == local
 #| label: tbl-unico_municipio_recebendo
 #| tbl-cap: Vários pagadores e um favorecido (R$).
 
-favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, municipio_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) %>% arrange(desc(valor_recebido))%>% head(10) %>% kable(col.names = c("Município UG Pagadora", "Município do Favorecido", "Valor Recebido (R$)"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))%>%
+favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, muni_uf_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) %>% arrange(desc(valor_recebido))%>% head(10) %>% kable(col.names = c("Município Pagador", "Município do Favorecido", "Valor Recebido (R$)"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))%>%
   kable_styling(font_size = 9)
 ```
 
@@ -568,7 +586,7 @@ favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == loc
 
 leaflet() %>% addTiles() %>%
   addCircles( data = varios_pagadores_um_favorecido, color = "blue", weight = 1,
-    radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago ",Format( valor_recebido, fmt=myNumFmt), " para: ", municipio_favorecido
+    radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago ",Format( valor_recebido, fmt=myNumFmt), " para: ", muni_uf_favorecido
   ))%>% 
   leaflet::addCircles (data=um_pagador_varios_favorecidos, color = "red", weight = 1,
     radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago ",Format( valor_recebido, fmt=myNumFmt), " para: ", muni_uf_favorecido
@@ -584,3 +602,7 @@ Brasília, Intra e Financeiro.
 ### Favorecido Final
 
 ### Saldo Financeiro por local
+
+### Base de dados
+
+UGs, nome, siafi, local, IBGE.
