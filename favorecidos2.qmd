@@ -41,6 +41,7 @@ library(DT)
 # formato dos numeros
 myNumFmt <- as.fmt(digits=0, big.mark=".")
 
+options(scipen = 999)
 
 ```
 
@@ -186,7 +187,7 @@ Há um único tipo de pagador na base de dados. Todos os `r   Format( length(uni
 favorecidos_amostra %>% group_by( nome_unidade_gestora, codigo_unidade_gestora) %>% head(10) %>% count() %>% arrange(desc(n)) %>% select(-n)  %>% kable(col.names = c("Nome da UG", "Código da UG"))
 ```
 
-### Tipos de valor (positivo ou negativo)
+### Tipos de valor (positivo ou negativo) {#sec-tipos-de-valor}
 
 Ao mergulhar nos dados, percebemos algo incomum: alguns pagamentos aparecem com valor negativo. A @tbl-valor_negativo traz alguns dos registros dos valores negativos.
 
@@ -226,15 +227,25 @@ favorecidos_2023_01 %>% group_by( tipo_favorecido, tipo_saldo) %>%  summarise(va
 ### Tipo de local
 
 ```{r tipo_local}
-lista_ugs <- read_excel("lista_ugs.xlsx") %>% clean_names() %>% mutate(ug_executora_codigo = as.double(ug_executora_codigo))
+lista_ugs <- read_excel("lista_ugs.xlsx") %>% clean_names() %>% mutate(ug_executora_codigo = as.double(ug_executora_codigo), uge_municipio_codigo_ibge = as.double(uge_municipio_codigo_ibge) )
 
-favorecidos_2023_01 <- left_join( favorecidos_2023_01 , lista_ugs %>% select(ug_executora_codigo,uge_municipio_nome,uge_uf_sigla), by = c ("codigo_unidade_gestora" = "ug_executora_codigo"))
+
+municipios <- read_csv("municipios.csv")
+municipios <- municipios %>% mutate (muni_uf = paste0(str_to_upper(name)," - ", uf_code) )
+
+lista_ugs <- left_join(lista_ugs, municipios %>% select(municipio, name, uf_code), by = c("uge_municipio_codigo_ibge" = "municipio"))
+
+favorecidos_2023_01 <- left_join( favorecidos_2023_01 , lista_ugs %>% select(ug_executora_codigo,name,uf_code), by = c ("codigo_unidade_gestora" = "ug_executora_codigo"))
 
 favorecidos_2023_01 <- favorecidos_2023_01 %>% 
        rename( "uf_favorecido" = "sigla_uf",
                "municipio_favorecido" = "nome_municipio",
-               "uf_ug_pagadora" = "uge_uf_sigla",
-               "municipio_ug_pagadora" = "uge_municipio_nome")
+               "uf_ug_pagadora" = "uf_code",
+               "municipio_ug_pagadora" = "name")
+
+favorecidos_2023_01 <- favorecidos_2023_01 %>% mutate (muni_uf_favorecido = paste0( municipio_favorecido," - ", uf_favorecido) )
+
+favorecidos_2023_01 <- favorecidos_2023_01 %>% mutate (muni_uf_pagadora = paste0(str_to_upper( municipio_ug_pagadora)," - ", uf_ug_pagadora) )
 
 
 ```
@@ -265,36 +276,7 @@ favorecidos_2023_01  %>% group_by( uf_favorecido, municipio_favorecido ) %>%coun
 favorecidos_2023_01  %>% group_by( uf_ug_pagadora, municipio_ug_pagadora ) %>%count() %>% tail() %>% kable()
 ```
 
-#### Latitude e Longitude
-
 <https://www.tesourotransparente.gov.br/ckan/dataset/lista-de-municipios-do-siafi>
-
-```{r latitude_longitude}
-
-
-# lista_ugs <- read_excel("favorecidos/lista_ugs.xlsx") %>% clean_names()
-
-
-municipios <- read_csv("municipios.csv")
-
-# municipios <-  municipios %>% mutate(municipio = as.character(municipio))
-
-municipios <- municipios %>% mutate (muni_uf = paste0(str_to_upper(name)," - ", uf_code) )
-
-municipios <- municipios %>% mutate (muni_uf_favorecido = paste0(str_to_upper(name)," - ", uf_code) )
-
-municipios <- municipios %>% mutate(muni_uf_pagadora = paste0( str_to_upper(no_accents), " - ",uf_code))
-
-
-# municipios <- left_join(municipios %>%  select(municipio, muni_uf, lat, lon), lista_ugs %>% select(ug_executora_codigo, uge_municipio_codigo_ibge), by = c( "municipio"= "uge_municipio_codigo_ibge"))
-# 
-# favorecidos_2023_01 <-  favorecidos_2023_01 %>% mutate(codigo_unidade_gestora = as.character(codigo_unidade_gestora))
-
-
-favorecidos_2023_01 <- favorecidos_2023_01 %>% mutate (muni_uf_favorecido = paste0( municipio_favorecido," - ", uf_favorecido) )
-
-favorecidos_2023_01 <- favorecidos_2023_01 %>% mutate (muni_uf_pagadora = paste0( municipio_ug_pagadora," - ", uf_ug_pagadora) )
-```
 
 \
 \
@@ -313,6 +295,8 @@ A @fig-favorecido_final lista os favorecidos finais da ordem bancária 2023OB800
 
 Quando analisarmos os favorecidos é bom relebrar o fato de alguns deles atuarem como repassadores dos recursos para os beneficiários finais.
 
+Outro ponto importante é a questão dos valores negativos. Conforme mencionado em @sec-tipos-de-valor, há valores pagos positivos e negativos. Quando agruparmos os valores nas tabelas abaixo, o valor recebido será o saldo líquido entre os valores positivos e os valores negativos. (vide a @tbl-valor_negativo)
+
 ### Principais Favorecidos
 
 ```{r principais_favorecidos}
@@ -326,10 +310,6 @@ favorecidos_2023_01  %>% group_by( tipo_favorecido, nome_favorecido) %>%  summar
 ```
 
 ### Por Tipo de Favorecidos
-
-A @tbl-tipo_favorecido traz o tipo de favorecido classificado pelo valor recebido em R\$ bilhões. Como alertamos anteiormente, os favorecidos são os favorecidos da ordem bancário e não necessariamente os favorecidos finais.
-
-Alguns pontos se destacam, por exemplo, o total
 
 #### Banco
 
@@ -419,7 +399,7 @@ favorecidos_2023_01 %>% filter(tipo_favorecido == "Transferências") %>% group_b
 favorecidos_2023_01 %>% filter(tipo_favorecido == "UG") %>% group_by( nome_favorecido) %>%  summarise(valor_recebido =  round(sum(valor_recebido)/1000000000,1)) %>% arrange(desc(valor_recebido)) %>% head(10)  %>% kable(col.names = c("Favorecido", "Valor Recebido (R$ bi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
-#### Folha de Pagamento e Sigilosos
+#### Sigilosos e Folha de Pagamento
 
 ```{r folha_e_sigilosos}
 #| warning: false
@@ -513,6 +493,12 @@ favorecidos_2023_01 %>% filter(valor_recebido>0) %>% group_by(municipio_ug_pagad
 
 ## Vinculando pagador ao favorecido
 
+Vamos utilizar a cidade de Recife-PE para vincular o local do pagamento ao favorecido. Neste caso, o filtramos apenas o tipo de favorecido PJ.
+
+Inicialmente apresentaremos para onde foram os recursos pagos por tanto por Pernambuco quanto por Recife. Ou seja, onde ficam as empresas beneficiadas com os recursos provenientes de Pernambuco e Recife.
+
+Em seguida apresentaremos de onde vieram os recursos para pagar as empresas sediadas em Pernambuco e Recife.
+
 ### Vinculando por UF
 
 ```{r uf_pagadora_ufs_recebedoras}
@@ -536,12 +522,12 @@ favorecidos_2023_01%>% filter(uf_favorecido == str_sub(local_cidade, start = -2L
 
 
 
-um_pagador_varios_favorecidos <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_pagadora == local_cidade) %>% group_by(muni_uf_favorecido, muni_uf_pagadora) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf_favorecido))
+um_pagador_varios_favorecidos <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_pagadora == local_cidade) %>% group_by(muni_uf_favorecido, muni_uf_pagadora) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf), by =c("muni_uf_favorecido"="muni_uf"))
 
 
-varios_pagadores_um_favorecido <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, muni_uf_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf_pagadora))
 
   
+varios_pagadores_um_favorecido <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, muni_uf_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf), by = c( "muni_uf_pagadora" ="muni_uf"))
 
 
 
@@ -575,21 +561,23 @@ favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == loc
   kable_styling(font_size = 9)
 ```
 
+O mapa @fig-origem_destino apresenta em azul de onde vieram os valores para pagar as empresas sediadas em Recife-PE e em vermelho os destinos dos valores pagos pelas UGs localizadas em Recife-PE. Ou seja, em azul o que ingressou em Recife e em vermelho o que saiu de Recife.
+
 ```{r origem_destino}
 #| warning: false
 #| message: false
 #| error: false
 #| label: fig-origem_destino
-#| fig-cap: Origem e destino dos valores (R$).
+#| fig-cap: Fluxo dos pagamentos em R$.
 
 
 
 leaflet() %>% addTiles() %>%
   addCircles( data = varios_pagadores_um_favorecido, color = "blue", weight = 1,
-    radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago ",Format( valor_recebido, fmt=myNumFmt), " para: ", muni_uf_favorecido
+    radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago R$ ",Format( valor_recebido, fmt=myNumFmt), " para ", muni_uf_favorecido
   ))%>% 
   leaflet::addCircles (data=um_pagador_varios_favorecidos, color = "red", weight = 1,
-    radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago ",Format( valor_recebido, fmt=myNumFmt), " para: ", muni_uf_favorecido
+    radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago R$ ",Format( valor_recebido, fmt=myNumFmt), " para ", muni_uf_favorecido
   ))
 ```
 
@@ -597,12 +585,12 @@ leaflet() %>% addTiles() %>%
 
 ### Concentração
 
-Brasília, Intra e Financeiro.
+O fluxo dos pagamentos concentra-se em Brasília, em transações Intra e nos pagamentos da dívida pública.
 
 ### Favorecido Final
 
+Ressaltamos novamente que o favorecido final não é necessariamente o favorecido da ordem bancária.
+
 ### Saldo Financeiro por local
 
-### Base de dados
-
-UGs, nome, siafi, local, IBGE.
+A base de dados do Siafi não contempla caractéres com acentos e cedilha. Por este motivo, foi necessário mesclar várias bases de dados para obter o nome correto das localidade (SÃO PAULO x SAO PAULO).
