@@ -29,7 +29,6 @@ library(kableExtra)
 library(DescTools)
 library(zoo)
 library(stringr)
-library(igraph)
 library(data.table)
 library(DT)
 
@@ -53,7 +52,7 @@ Neste relatório nós vamos analisar os dados do recebimento de recursoso por fa
 
 ![Dicionário de dados](favorecidos/print_dicionario_favorecidos.png){#fig-dicionario}
 
-Os arquivos estáo no padrão "favorecidos_j_yyyy_mm" e nós vamos acessar os dados de janeiro de 2023 a partir do arquivo "favorecidos_2023_01.xlsx".
+Os arquivos estão no padrão "favorecidos_yyyy_mm" e nós vamos acessar os dados de janeiro de 2023 a partir do arquivo "favorecidos_2023_01.csv".
 
 ```{r importar dados}
 
@@ -276,9 +275,6 @@ favorecidos_2023_01  %>% group_by( uf_favorecido, municipio_favorecido ) %>%coun
 favorecidos_2023_01  %>% group_by( uf_ug_pagadora, municipio_ug_pagadora ) %>%count() %>% tail() %>% kable()
 ```
 
-<https://www.tesourotransparente.gov.br/ckan/dataset/lista-de-municipios-do-siafi>
-
-\
 \
 
 ## Quem recebe (favorecido)
@@ -527,7 +523,7 @@ um_pagador_varios_favorecidos <- left_join(  favorecidos_2023_01%>% filter(tipo_
 
 
   
-varios_pagadores_um_favorecido <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, muni_uf_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf), by = c( "muni_uf_pagadora" ="muni_uf"))
+varios_pagadores_uma_localidade <- left_join(  favorecidos_2023_01%>% filter(tipo_favorecido == "PJ", muni_uf_favorecido == local_cidade) %>% group_by(muni_uf_pagadora, muni_uf_favorecido) %>% summarise(valor_recebido = sum(valor_recebido)) , municipios %>% select(lon,lat, muni_uf), by = c( "muni_uf_pagadora" ="muni_uf"))
 
 
 
@@ -573,7 +569,7 @@ O mapa @fig-origem_destino apresenta em azul de onde vieram os valores para paga
 
 
 leaflet() %>% addTiles() %>%
-  addCircles( data = varios_pagadores_um_favorecido, color = "blue", weight = 1,
+  addCircles( data = varios_pagadores_uma_localidade, color = "blue", weight = 1,
     radius = ~sqrt(valor_recebido) * 30, popup = ~ paste0("Pago R$ ",Format( valor_recebido, fmt=myNumFmt), " para ", muni_uf_favorecido
   ))%>% 
   leaflet::addCircles (data=um_pagador_varios_favorecidos, color = "red", weight = 1,
@@ -593,4 +589,4 @@ Ressaltamos novamente que o favorecido final não é necessariamente o favorecid
 
 ### Saldo Financeiro por local
 
-A base de dados do Siafi não contempla caractéres com acentos e cedilha. Por este motivo, foi necessário mesclar várias bases de dados para obter o nome correto das localidade (SÃO PAULO x SAO PAULO).
+A base de dados do Siafi não contempla caracteres com acentos e cedilha. Por este motivo, foi necessário mesclar várias bases de dados para obter o nome correto das localidades (SÃO PAULO x SAO PAULO).
