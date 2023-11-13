@@ -1,0 +1,113 @@
+---
+title: "Receitas"
+editor: visual
+lang: "pt"
+format:
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+  error: false
+---
+
+[dados abertos](https://portaldatransparencia.gov.br/download-de-dados)
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(knitr)
+library(kableExtra)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(igraph)
+library(data.table)
+library(DT)
+```
+
+```{r}
+# negar %in%
+`%notin%` <- Negate(`%in%`)
+
+# formato dos numeros
+myNumFmt <- as.fmt(digits=0, big.mark=".")
+```
+
+```{r}
+
+```
+
+```{r}
+ler_receitas <- function(x) {read_delim(x, 
+    delim = ";", escape_double = FALSE, col_types = cols(`DATA LANÇAMENTO` = col_date(format = "%d/%m/%Y")), 
+    locale = locale(date_names = "pt", decimal_mark = ",", 
+        grouping_mark = ".", encoding = "Latin1"), 
+    trim_ws = TRUE)} 
+```
+
+```{r}
+
+arq_receita <- list.files("C:/Users/andre.ferrari/Documents/R/dados_abertos/receitas/dados_receitas", pattern='*.csv')
+
+
+
+setwd("C:/Users/andre.ferrari/Documents/R/dados_abertos/receitas/dados_receitas")
+receita <- map_df(arq_receita,ler_receitas)
+
+
+receita <- receita %>% clean_names() 
+
+receita <- receita %>% select(categoria_economica , origem_receita ,especie_receita  ,detalhamento, data_lancamento, ano_exercicio, valor_realizado)
+                                             
+receita <- receita %>% mutate(data_lancamento = as.Date(data_lancamento))                                               
+receita <-  receita %>% mutate(tributo = case_when(
+   startsWith(detalhamento, "IR"  ) ~ "IR",
+   startsWith(detalhamento, "IPI" ) ~ "IPI",
+   TRUE ~ "Outro"
+  
+))                                         
+                                               
+receita <- receita   %>% mutate(mes = lubridate::month( data_lancamento, label = TRUE, abbr = TRUE), mes_ano = strftime(data_lancamento,format="%b-%Y") )
+
+receita <- receita %>% group_by(categoria_economica , origem_receita ,especie_receita  ,detalhamento, tributo,ano_exercicio, mes, mes_ano,valor_realizado) %>% summarise(valor_realizado = sum(valor_realizado))
+
+
+```
+
+[Como remover caracteres especiais no R](https://rstudio-pubs-static.s3.amazonaws.com/596043_34a6208249e14b2c850cd482b47aab10.html)
+
+```{r}
+
+receita <- receita %>% mutate (deta_clean = str_to_upper (chartr("áéíóúÁÉÍÓÚýÝàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛãõÃÕñÑäëïöüÄËÏÖÜÿçÇ",
+                 "aeiouaeiouyyaeiouaeiouaeiouaeiouaoaonnaeiouaeiouycc",detalhamento) ))
+
+```
+
+```{r}
+datatable(receita %>% filter(tributo %in% c("IR", "IPI")) %>% group_by(deta_clean, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor))
+```
+
+```{r}
+receita <- receita %>% mutate(tipo = case_when(
+    str_detect(deta_clean, "INTRA") ~ "02 - Intra",
+    str_detect(deta_clean, "JUROS") |str_detect(deta_clean, "JUR")|str_detect(deta_clean, "-MUL")| str_detect(deta_clean, "DIV.AT") | str_detect(deta_clean, "ATIVA") & ! str_detect(deta_clean, "INTRA") ~ "03 - Dívida Ativa, Multas e Juros",
+    TRUE ~ "01 - Princial"))
+```
+
+```{r}
+datatable(receita %>% group_by(tipo, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor))
+```
+
+```{r}
+datatable(receita %>% filter(tributo %in% c("IR", "IPI")) %>% group_by(tipo,deta_clean, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor))
+```
