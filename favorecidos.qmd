@@ -208,7 +208,7 @@ A base de dados traz o favorecido da ordem bancária, que não é necessariament
 
 A @fig-intermediario ilustra a situação do "intermediário financeiro". O Banco do Brasil recebeu R\$ 425 milhões via a ordem bancária 2023OB8000186 e depois repassou os recursos para municípios (confira: [favorecidos da OB](https://portaldatransparencia.gov.br/despesas/pagamento/257001000012023OB800186?ordenarPor=fase&direcao=desc)).
 
-![Intermediário financeiro ](favorecidos/ob_bb_intermediario.png){#fig-intermediario}
+![Intermediário financeiro](favorecidos/ob_bb_intermediario.png){#fig-intermediario}
 
 A @fig-favorecido_final lista os favorecidos finais da ordem bancária 2023OB8000186.
 
