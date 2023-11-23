@@ -94,7 +94,7 @@ A partir da visão panorâmica dos dados é possível identificar quatro grandes
 
 2\) **o que** foi arrecadado (**categoria econômica, origem, espécie e detalhamento**)
 
-3\) **quanto** foi arrecadado (**lançado, realizado e previsto**)
+3\) **quanto** foi arrecadado (**previsto, lançado, realizado e percentual realizado**)
 
 4\) **quando** foi arrecadado (**data e ano exercício**).
 
@@ -104,16 +104,16 @@ glimpse(receita)
 
 ### Quem arrecadou (inconsistência nos nomes dos órgãos)
 
-A @tbl-orgao_arrecadador traz os cinco órgão superiores com a maior arrecadação em 2022. O Ministério da Fazenda aparece na liderança absoluta com 81,6% de toda a arrecadação. Os valores estão corretos, conduto, em 2022 não existia o Ministério da Fazenda.
+A @tbl-orgao_arrecadador traz os cinco órgãos superiores com a maior arrecadação em 2022. O Ministério da Fazenda aparece na liderança absoluta com 81,6% de toda a arrecadação. Os valores estão corretos, conduto, em 2022 não existia o Ministério da Fazenda.
 
 ```{r orgao_arrecador}
 #| warning: false
 #| message: false
 #| error: false
 #| label: tbl-orgao_arrecadador
-#| tbl-cap: Principais órgãos arrecadadores em 2022 (R$ bi).
+#| tbl-cap: Principais órgãos arrecadadores em 2022.
 
-receita %>% filter(ano_exercicio==2022) %>% group_by(nome_orgao_superior) %>% summarise(valor = sum(valor_realizado)/1000000000) %>% mutate( participação = valor/sum(valor)*100) %>% arrange(desc(participação))  %>% head(5)%>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+receita %>% filter(ano_exercicio==2022) %>% group_by(nome_orgao_superior) %>% summarise(valor = sum(valor_realizado)/1000000000) %>% mutate( participacao = valor/sum(valor)*100) %>% arrange(desc(participacao))  %>% head(5)%>% kable( col.na = c("Órgão Superior", "Valor (R$ bi)", "Participação (%)"),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
 Durante o período contemplado pela nossa base de dados, o órgão 25000 assumiu o nome de Ministério da Economia entre 2019 e 2022. No exercício atual, 2023, o órgão 25000 voltou a ser chamado de Ministério da Fazenda. A @tbl-ministerio_fazenda mostra a arrecadação do órgão 25000 de 2017 a 2023 e podemos observar que o órgão 25000 aparece sempre com o nome Ministério da Fazenda.
@@ -126,7 +126,7 @@ Não é um erro da base de dados. Os sistemas do Governo são ajustados para faz
 #| error: false
 #| label: tbl-ministerio_fazenda
 #| tbl-cap: Inconsistência com o nome do órgão 25000.
-receita %>%filter(str_detect(nome_orgao_superior, "Fazenda"), ano_exercicio > 2016) %>% mutate(codigo_orgao_superior = as.character(codigo_orgao_superior)) %>% group_by(nome_orgao_superior, codigo_orgao_superior, ano_exercicio) %>% summarise(valor = sum(valor_realizado)/1000000000) %>% arrange(ano_exercicio) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)%>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+receita %>%filter(str_detect(nome_orgao_superior, "Fazenda"), ano_exercicio > 2016) %>% mutate(codigo_orgao_superior = as.character(codigo_orgao_superior)) %>% group_by(nome_orgao_superior, codigo_orgao_superior, ano_exercicio) %>% summarise(valor = sum(valor_realizado)/1000000000) %>% arrange(ano_exercicio) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)%>% kable( col.na = c("Órgão Superior", "Código", c(2017:2023)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
 A situação do ministério responsável pela agenda da igualdade racial ressalta a importância dos códigos em detrimento dos nomes dos órgãos. O código é perene e facilita a utilização dos dados. Os nomes, por sua vez podem causar dificuldades. A @tbl-ministerio_igualdade_racial ilustra a dificuldade de se trabalhar com os nomes dos órgãos.
@@ -139,7 +139,7 @@ Felizmente a dificuldade com os nomes dos órgãos pode ser contornada com a uti
 #| error: false
 #| label: tbl-ministerio_igualdade_racial
 #| tbl-cap: Inconsistência com o nome do ministério
-receita %>%filter(str_detect(nome_orgao_superior, "Racial|  Mulher"), ano_exercicio > 2016) %>% mutate(codigo_orgao_superior = as.character(codigo_orgao_superior)) %>% group_by(nome_orgao_superior, codigo_orgao_superior, ano_exercicio) %>% summarise(valor = sum(valor_realizado)/1000) %>% arrange(ano_exercicio) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)%>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+receita %>%filter(str_detect(nome_orgao_superior, "Racial|  Mulher"), ano_exercicio > 2016) %>% mutate(codigo_orgao_superior = as.character(codigo_orgao_superior)) %>% group_by(nome_orgao_superior, codigo_orgao_superior, ano_exercicio) %>% summarise(valor = sum(valor_realizado)/1000) %>% arrange(ano_exercicio) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)%>% kable(col.na = c("Órgão Superior", "Código", c(2017:2023)), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
 ### O que foi arrecadado (dificuldade com os nomes das receitas)
@@ -156,11 +156,11 @@ A @tbl-especie_receita identifica problemas com a espécie da receita. Uma mera 
 #| tbl-cap: Inconsistência com a espécie da receita
 nomes <- receita %>% filter(str_detect(especie_receita,"Contribuições para|Delegação|Exploração do patrimônio im|Indenizações, restituições e |Serviços e Atividades Referentes à N|Transferências de Ou"), ano_exercicio %in% c("2022","2023")) %>% group_by(especie_receita, ano_exercicio) %>% mutate(ano_exercicio = as.character(ano_exercicio)) %>% summarise(valor= sum(valor_realizado)/1000000000) 
 
-nomes %>% filter(str_detect(especie_receita,"Contribuições para" ) )%>% kable(col.names = c("Espécie da Receita", "Ano","R$ bi"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )%>% column_spec(2, color = ifelse(nomes$ano_exercicio == 2023, "red", "blue"))
+nomes %>% filter(str_detect(especie_receita,"Contribuições para|Delegação" ) )%>% kable(col.names = c("Espécie da Receita", "Ano","R$ bi"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )%>% column_spec(2, color = ifelse(nomes$ano_exercicio == 2023, "red", "blue"))
 
 
 
-nomes %>% filter(str_detect(especie_receita,"Delegação" ) )%>% kable(col.names = c("Espécie da Receita", "Ano","R$ bi"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )%>% column_spec(2, color = ifelse(nomes$ano_exercicio == 2023, "red", "blue"))
+
 ```
 
 ### Quanto foi arrecadado (valores negativos)
@@ -171,7 +171,7 @@ nomes %>% filter(str_detect(especie_receita,"Delegação" ) )%>% kable(col.names
 #| error: false
 #| label: tbl-valores_negativos
 #| tbl-cap: Principais valores negativos em 2022 (R$ bi)
-receita %>% filter(valor_realizado<0, ano_exercicio == 2022) %>% group_by(nome_orgao_superior) %>% summarise(valores_negativos = sum(valor_realizado)/1000000000) %>% arrange(valores_negativos) %>% head()%>% kable( col.na = c("Órgão","R$ bi"),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+receita %>% filter(valor_realizado<0, ano_exercicio == 2022) %>% group_by(nome_orgao_superior) %>% summarise(valores_negativos = sum(valor_realizado)/1000000000) %>% arrange(valores_negativos) %>% head()%>% kable( col.na = c("Órgão Superior","R$ bi"),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
 ### Quando foi arrecadado (data de lançamento única até 2015)
@@ -182,7 +182,7 @@ receita %>% filter(valor_realizado<0, ano_exercicio == 2022) %>% group_by(nome_o
 #| error: false
 #| label: tbl-data_lancamento_2015
 #| tbl-cap: Data lançamento em 2015
-receita %>% filter(ano_exercicio==2015) %>% group_by(data_lancamento) %>% count()%>%  kable( digits = 0, format.args = list(big.mark = ".", decimal.mark = ",") )
+receita %>% filter(ano_exercicio==2015) %>% group_by(data_lancamento) %>% count()%>%  kable( col.na = c("Data Lançamento", "Quantidade"),digits = 0, format.args = list(big.mark = ".", decimal.mark = ",") )
 
 ```
 
@@ -192,42 +192,75 @@ receita %>% filter(ano_exercicio==2015) %>% group_by(data_lancamento) %>% count(
 #| error: false
 #| label: tbl-data_lancamento_2016
 #| tbl-cap: Data lançamento em 2016
-receita %>% filter(ano_exercicio==2016) %>% group_by(data_lancamento) %>% count() %>% arrange(-n)%>% head(5) %>%  kable( digits = 0, format.args = list(big.mark = ".", decimal.mark = ",") )
+receita %>% filter(ano_exercicio==2016) %>% group_by(data_lancamento) %>% count() %>% arrange(-n)%>% head(5) %>%  kable(  col.na = c("Data Lançamento", "Quantidade"),digits = 0, format.args = list(big.mark = ".", decimal.mark = ",") )
 
 ```
 
 ## Tratamento dos dados
 
-[Como remover caracteres especiais no R](https://rstudio-pubs-static.s3.amazonaws.com/596043_34a6208249e14b2c850cd482b47aab10.html)
+O principal desafio em relação à base de dados foi a de harmonizar os nomes do detalhamento da receita. Tentei agrupar nomes parecidos, por exemplo, quando em um ano o nome aparecia com acentuação e em outro ano aparecia sem acentuação.
 
-Com o glimpse, podemos observar que os nossos dados contém `r Format(length( unique(receita$detalhamento)), fmt=myNumFmt)` registros.
+A base da dados retorna `r Format(length( unique(receita$detalhamento)), fmt=myNumFmt)` registros únicos para o atributo *detalhamento*.
 
 ### Detalhamento da receita
 
+A @tbl-divida_ativa_com_acento traz duas linhas para o mesmo *Detalhamento da Receita*, pois a palavra "DÍVIDA" aparece tanto sem acento (primeira linha), como com acento (segunda linha).
+
 ```{r detalhamento_receita}
-receita %>% filter(startsWith(detalhamento,"COFINS-D"), !str_detect(detalhamento,"JUROS"), ano_exercicio <2019) %>% group_by(detalhamento, ano_exercicio) %>% summarise(valor =  sum(valor_realizado)/1000000) %>% mutate(ano_exercicio = as.character(ano_exercicio)) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)  %>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) 
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-divida_ativa_com_acento
+#| tbl-cap: Detalhamento da receita - caracteres especiais.
+divida <- receita %>% filter(startsWith(detalhamento,"COFINS-D"), !str_detect(detalhamento,"JUROS"), ano_exercicio <2019) %>% group_by(detalhamento, ano_exercicio) %>% summarise(valor =  sum(valor_realizado)/1000000) %>% mutate(ano_exercicio = as.character(ano_exercicio)) %>% pivot_wider(names_from = ano_exercicio, values_from = valor) 
+
+ divida%>% kable(  col.na = c("Detalhamento", c(2016:2018)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )  %>% column_spec(1, color = ifelse(str_detect(divida$detalhamento, "DÍ") , "red", "blue"))
 
 ```
+
+\
+Segui a dica do Steves Ross ([Como remover caracteres especiais no R](https://rstudio-pubs-static.s3.amazonaws.com/596043_34a6208249e14b2c850cd482b47aab10.html)) para remover os caracteres especiais e o atibuto *detalhamento* deixou de ter, por exemplo, acentos e cedilha.
 
 ```{r remover_caracter_especial}
 receita <- receita %>% mutate (detalhamento = str_to_upper (chartr("áéíóúÁÉÍÓÚýÝàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛãõÃÕñÑäëïöüÄËÏÖÜÿçÇ",
                  "aeiouaeiouyyaeiouaeiouaeiouaeiouaoaonnaeiouaeiouycc",detalhamento) ))
 ```
 
-Com o glimpse, podemos observar que os nossos dados contém `r Format(length( unique(receita$detalhamento)), fmt=myNumFmt)` registros.
+Após o ajuste, a base de dados passou a retornar `r Format(length( unique(receita$detalhamento)), fmt=myNumFmt)` registros únicos para o atributo *detalhamento*. A @tbl-divida_ativa_sem_acento mostra o resultado da remoção do acento da palavra "DÍVIDA".
 
 ```{r acento_divida}
-receita %>% filter(startsWith(detalhamento,"COFINS-D"), !str_detect(detalhamento,"JUROS"), ano_exercicio <2019) %>% group_by(detalhamento, ano_exercicio) %>% summarise(valor =  sum(valor_realizado)/1000000) %>% mutate(ano_exercicio = as.character(ano_exercicio)) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)  %>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) 
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-divida_ativa_sem_acento
+#| tbl-cap: Detalhamento da receita - após remoção dos caracteres especiais.
+receita %>% filter(startsWith(detalhamento,"COFINS-D"), !str_detect(detalhamento,"JUROS"), ano_exercicio <2019) %>% group_by(detalhamento, ano_exercicio) %>% summarise(valor =  sum(valor_realizado)/1000000) %>% mutate(ano_exercicio = as.character(ano_exercicio)) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)  %>% kable( col.na = c("Detalhamento", c(2016:2018)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) 
 ```
+
+Contudo, não avancei em uma solução para lidar com nomes diferentes que não envolviam caracteres especiais. Por exemplo, na @tbl-detalhamento_inconsistencia_nome_01, o desafio está no termo "PRINCIPAL" que passa a integrar o nome "TITULOS DA DIVIDA AGRARIA - TDA" a partir do exercício de 2016.
 
 ```{r nome_detalhamento_inconsistencia_01}
-receita %>% filter(especie_receita =="Operações de crédito - mercado interno", str_detect(detalhamento,"TIT"),str_detect(detalhamento,"AGRA") , ano_exercicio %in% c(2015,2016)) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% kable()
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-detalhamento_inconsistencia_nome_01
+#| tbl-cap: Detalhamento da receita - inconsitência no nome.
+
+receita %>% filter(especie_receita =="Operações de crédito - mercado interno", str_detect(detalhamento,"TIT"),str_detect(detalhamento,"AGRA") , ano_exercicio %in% c(2015,2016)) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% kable(col.na = c("Detalhamento", c(2016:2017)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 
 
 ```
 
+A @tbl-detalhamento_inconsistencia_nome_02 nos apresenta um novo desafio, até 2016 o detalhamento traz "TES.NACIONAL" e em 2017 "TESOURO". Este e outros desafios não foram sanados.
+
 ```{r nome_detalhamento_inconsistencia_02}
-receita %>% filter( str_detect(detalhamento,"REMUNER.DISPONIBILIDADES"),str_detect(detalhamento,"PRINC"),  ano_exercicio %in% c(2021,2022)) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% kable()
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-detalhamento_inconsistencia_nome_02
+#| tbl-cap: Detalhamento da receita - inconsitência no nome
+
+receita %>% filter( str_detect(detalhamento,"REMUNER.DISPONIBILIDADES"),str_detect(detalhamento,"PRINC"),  ano_exercicio %in% c(2021,2022)) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% kable(col.na = c("Detalhamento", c(2016:2017)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 ### Tipo de receita
@@ -237,6 +270,11 @@ O Tipo da receita segue a estrutura apresentada na @fig-receita_tipo
 ![Tipo de receita](receitas/tipo_receita.png){#fig-receita_tipo}
 
 ```{r tipo_receita}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-tipo_receita
+#| tbl-cap: Tipo da receita - tentativa de agrupamento.
 receita <- receita %>% mutate(tipo = case_when(
     str_detect(detalhamento, "INTRA") ~ "02 - Intra",
     str_detect(detalhamento, "JUR|-MUL|DIV.AT|DIV.ATIV|ATIVA|DIV ATIV|MULT.J.|MUL.|MULTA|MLT") & ! str_detect(detalhamento, "INTRA") ~ "03 - Dívida Ativa, Multas e Juros",
@@ -250,15 +288,24 @@ receita %>% group_by(tipo, ano_exercicio) %>%  summarise(valor = round(sum(valor
 ### IR e IPI
 
 ```{r ipi_ir}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-ip_ipi
+#| tbl-cap: Arrecadação de IPI e IR (tipo principal entre 2016 e 2022 em Bi R$).
 
-
-receita %>% filter(startsWith(detalhamento, "IR") | startsWith(detalhamento, "IPI") , valor_realizado > 1, ano_exercicio>2015, startsWith(tipo, "01")) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange (ano_exercicio, desc(valor))  %>% filter(valor > 0)  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% janitor::adorn_totals() %>% arrange(desc(2023))%>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) 
+receita %>% filter(startsWith(detalhamento, "IR") | startsWith(detalhamento, "IPI") , valor_realizado > 1, ano_exercicio %in% c(2016:2022), startsWith(tipo, "01")) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange (ano_exercicio, desc(valor))  %>% filter(valor > 0)  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% janitor::adorn_totals() %>% arrange(desc(2022))%>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) 
 ```
 
 ### Dividendos
 
 ```{r dividendos}
-dividendos <- receita %>% filter(   startsWith( detalhamento,  "DIVIDE")) %>% group_by(ano_exercicio, origem_receita) %>% summarise(valor = sum(valor_realizado)/1000000000, previsto = sum(valor_previsto_atualizado)/1000000000) %>% mutate(ano_exercicio = as.character(ano_exercicio), resultado =(valor-previsto)) %>% pivot_wider(names_from = origem_receita, values_from = c( previsto, valor, resultado) ) 
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-dividendos
+#| tbl-cap: Arrecadação de dividendos (2013 a 2022 em Bi R$).
+dividendos <- receita %>% filter(   startsWith( detalhamento,  "DIVIDE"), ano_exercicio != 2023) %>% group_by(ano_exercicio, origem_receita) %>% summarise(valor = sum(valor_realizado)/1000000000, previsto = sum(valor_previsto_atualizado)/1000000000) %>% mutate(ano_exercicio = as.character(ano_exercicio), resultado =(valor-previsto)) %>% pivot_wider(names_from = origem_receita, values_from = c( previsto, valor, resultado) ) 
 
 dividendos %>% kable(col.na = c("Ano", "Previsto", "Realizado", "Resultado"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) %>% column_spec(4, color = ifelse(dividendos$`resultado_Receita Patrimonial` < 0, "red", "blue"))
 ```
