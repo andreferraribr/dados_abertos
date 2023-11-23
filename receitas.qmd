@@ -14,7 +14,7 @@ execute:
   freeze: auto  # re-render only when source changes  
 ---
 
-[dados abertos](https://portaldatransparencia.gov.br/download-de-dados)
+Neste projteto nós vamos aboradar os dados da receita pública disponíveis em [dados abertos](https://portaldatransparencia.gov.br/download-de-dados).
 
 ```{r bibliotecas}
 #| warning: false
@@ -129,7 +129,7 @@ Não é um erro da base de dados. Os sistemas do Governo são ajustados para faz
 receita %>%filter(str_detect(nome_orgao_superior, "Fazenda"), ano_exercicio > 2016) %>% mutate(codigo_orgao_superior = as.character(codigo_orgao_superior)) %>% group_by(nome_orgao_superior, codigo_orgao_superior, ano_exercicio) %>% summarise(valor = sum(valor_realizado)/1000000000) %>% arrange(ano_exercicio) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)%>% kable( col.na = c("Órgão Superior", "Código", c(2017:2023)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
-A situação do ministério responsável pela agenda da igualdade racial ressalta a importância dos códigos em detrimento dos nomes dos órgãos. O código é perene e facilita a utilização dos dados. Os nomes, por sua vez podem causar dificuldades. A @tbl-ministerio_igualdade_racial ilustra a dificuldade de se trabalhar com os nomes dos órgãos.
+A situação do ministério responsável pela agenda da igualdade racial ressalta a importância dos códigos em detrimento dos nomes dos órgãos. O código é perene e facilita a utilização dos dados. Os nomes, por sua vez, podem causar dificuldades. A @tbl-ministerio_igualdade_racial ilustra a dificuldade de se trabalhar com os nomes dos órgãos.
 
 Felizmente a dificuldade com os nomes dos órgãos pode ser contornada com a utilização dos códigos.
 
@@ -165,16 +165,20 @@ nomes %>% filter(str_detect(especie_receita,"Contribuições para|Delegação" )
 
 ### Quanto foi arrecadado (valores negativos)
 
+A base de dados retorna alguns valores negativos. A @tbl-valores_negativos mostra os maiores valores negativos ordenados por órgão superior e detalhamento da receita. Não faz parte da nossa análise explicar o motivo dos valores negativos.
+
 ```{r qual_valor}
 #| warning: false
 #| message: false
 #| error: false
 #| label: tbl-valores_negativos
 #| tbl-cap: Principais valores negativos em 2022 (R$ bi)
-receita %>% filter(valor_realizado<0, ano_exercicio == 2022) %>% group_by(nome_orgao_superior) %>% summarise(valores_negativos = sum(valor_realizado)/1000000000) %>% arrange(valores_negativos) %>% head()%>% kable( col.na = c("Órgão Superior","R$ bi"),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+receita %>% filter(valor_realizado<0, ano_exercicio == 2022) %>% group_by(nome_orgao_superior, detalhamento) %>% summarise(valores_negativos = sum(valor_realizado)/1000000000) %>% arrange(valores_negativos) %>% head(10)%>% kable( col.na = c("Órgão Superior","Detalhamento","R$ bi"),digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
 ### Quando foi arrecadado (data de lançamento única até 2015)
+
+Os arquivos csv para os exercícios de 2013 e 2015 atribuem a data 31/12 para todos os lançamentos. A @tbl-data_lancamento_2015 apresenta a única data (31/12/2015) da base de dados do exercíco de 2015.
 
 ```{r ano_2015}
 #| warning: false
@@ -185,6 +189,8 @@ receita %>% filter(valor_realizado<0, ano_exercicio == 2022) %>% group_by(nome_o
 receita %>% filter(ano_exercicio==2015) %>% group_by(data_lancamento) %>% count()%>%  kable( col.na = c("Data Lançamento", "Quantidade"),digits = 0, format.args = list(big.mark = ".", decimal.mark = ",") )
 
 ```
+
+A partir de 2016, a data lançamento corresponde a data real do lançamento da receita no SIAFI. A @tbl-data_lancamento_2016 traz as datas com a maior quantidade de lançamentos no SIAFI.
 
 ```{r ano_2016}
 #| warning: false
@@ -265,9 +271,9 @@ receita %>% filter( str_detect(detalhamento,"REMUNER.DISPONIBILIDADES"),str_dete
 
 ### Tipo de receita
 
-O Tipo da receita segue a estrutura apresentada na @fig-receita_tipo
+O Tipo da receita segue a estrutura apresentada na @fig-receita_tipo, contudo a base de dados não traz os códigos da receita. Eu tentei idenficar os tipos a partir dos nomes contidos no detalhamento da receita. Para simplificar, ao invés de cinco códigos (0 ao 4), eu apliquei apenas três códigos: 01 - Principal, 02 - Intra e 03 - Dívida Ativa, Multas e Juros.
 
-![Tipo de receita](receitas/tipo_receita.png){#fig-receita_tipo}
+A @tbl-tipo_receita agrupa os valores arrecados por tipo (segundo os critérios que estabeleci).
 
 ```{r tipo_receita}
 #| warning: false
@@ -285,6 +291,8 @@ receita %>% group_by(tipo, ano_exercicio) %>%  summarise(valor = round(sum(valor
 
 ## Análise de dados
 
+Diante dos desafios da base de dados, eu optei por análises menos abrangentes. A @tbl-ip_ipi, por exemplo, traz apenas os dados a partir de 2016 para evitar a mudança nos nomes do detalhamento.
+
 ### IR e IPI
 
 ```{r ipi_ir}
@@ -299,6 +307,8 @@ receita %>% filter(startsWith(detalhamento, "IR") | startsWith(detalhamento, "IP
 
 ### Dividendos
 
+A @tbl-dividendos apresenta o valor previsto, o realizado e o resultdado da arrecadação de dividendos por parte da União. Ressaltamos os que dividendos recebidos estão relacionados à quantidade de estatais, à participação da União das estatais, ao lucro da estatais e à política de dividendos das estatais.
+
 ```{r dividendos}
 #| warning: false
 #| message: false
@@ -312,6 +322,12 @@ dividendos %>% kable(col.na = c("Ano", "Previsto", "Realizado", "Resultado"), di
 
 ## Considerações finais
 
+A base de dados permite algumas análises, mas dois fatores limitam os estudos
+
 ### Código da receita
 
+A falta do código da receita é o principal limitador, pois praticamente inviabiliza as análises temporais.
+
 ### Data lançamento
+
+Séries temporais mensais só podem ser elaboradas a partir de jan/2016, uma vez que de 2013 a 2015 a data lançamento tem o valor de 31/12.
