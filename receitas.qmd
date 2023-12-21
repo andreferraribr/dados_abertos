@@ -14,7 +14,7 @@ execute:
   freeze: auto  # re-render only when source changes  
 ---
 
-Neste projteto nós vamos aboradar os dados da receita pública disponíveis em [dados abertos](https://portaldatransparencia.gov.br/download-de-dados).
+Neste projeto nós vamos abordar os dados da receita pública disponíveis em [dados abertos](https://portaldatransparencia.gov.br/download-de-dados).
 
 ```{r bibliotecas}
 #| warning: false
@@ -142,9 +142,9 @@ Felizmente a dificuldade com os nomes dos órgãos pode ser contornada com a uti
 receita %>%filter(str_detect(nome_orgao_superior, "Racial|  Mulher"), ano_exercicio > 2016) %>% mutate(codigo_orgao_superior = as.character(codigo_orgao_superior)) %>% group_by(nome_orgao_superior, codigo_orgao_superior, ano_exercicio) %>% summarise(valor = sum(valor_realizado)/1000) %>% arrange(ano_exercicio) %>% pivot_wider(names_from = ano_exercicio, values_from = valor)%>% kable(col.na = c("Órgão Superior", "Código", c(2017:2023)), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
-### O que foi arrecadado (dificuldade com os nomes das receitas)
+### O que foi arrecadado (dificuldade com os nomes das receitas) {#sec-inconsistencia_nomes}
 
-Encontramos inúmeras dificuldades com os nomes das especíes das receitas e com os nomes dos detalhamentos das receitas. Como a base de dados não traz os códigos da receita fica complicado fazer análises abrangentes envolvendo diversas espécies de receitas e/ou detalhamentos.
+Encontramos inúmeras dificuldades com os nomes das espécies das receitas e com os nomes dos detalhamentos das receitas. Como a base de dados não traz os códigos da receita fica complicado fazer análises abrangentes envolvendo diversas espécies de receitas e/ou detalhamentos.
 
 A @tbl-especie_receita identifica problemas com a espécie da receita. Uma mera alteração no final do nome da espécie da receita cria um novo registro na base de dados.
 
@@ -178,7 +178,7 @@ receita %>% filter(valor_realizado<0, ano_exercicio == 2022) %>% group_by(nome_o
 
 ### Quando foi arrecadado (data de lançamento única até 2015)
 
-Os arquivos csv para os exercícios de 2013 e 2015 atribuem a data 31/12 para todos os lançamentos. A @tbl-data_lancamento_2015 apresenta a única data (31/12/2015) da base de dados do exercíco de 2015.
+Os arquivos csv para os exercícios de 2013 e 2015 atribuem a data 31/12 para todos os lançamentos. A @tbl-data_lancamento_2015 apresenta a única data (31/12/2015) da base de dados do exercício de 2015.
 
 ```{r ano_2015}
 #| warning: false
@@ -225,7 +225,7 @@ divida <- receita %>% filter(startsWith(detalhamento,"COFINS-D"), !str_detect(de
 ```
 
 \
-Segui a dica do Steves Ross ([Como remover caracteres especiais no R](https://rstudio-pubs-static.s3.amazonaws.com/596043_34a6208249e14b2c850cd482b47aab10.html)) para remover os caracteres especiais e o atibuto *detalhamento* deixou de ter, por exemplo, acentos e cedilha.
+Segui a dica do Steves Ross ([Como remover caracteres especiais no R](https://rstudio-pubs-static.s3.amazonaws.com/596043_34a6208249e14b2c850cd482b47aab10.html)) para remover os caracteres especiais e o atributo *detalhamento* deixou de ter, por exemplo, acentos e cedilha.
 
 ```{r remover_caracter_especial}
 receita <- receita %>% mutate (detalhamento = str_to_upper (chartr("áéíóúÁÉÍÓÚýÝàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛãõÃÕñÑäëïöüÄËÏÖÜÿçÇ",
@@ -250,7 +250,7 @@ Contudo, não avancei em uma solução para lidar com nomes diferentes que não 
 #| message: false
 #| error: false
 #| label: tbl-detalhamento_inconsistencia_nome_01
-#| tbl-cap: Detalhamento da receita - inconsitência no nome.
+#| tbl-cap: Detalhamento da receita - inconsistência no nome.
 
 receita %>% filter(especie_receita =="Operações de crédito - mercado interno", str_detect(detalhamento,"TIT"),str_detect(detalhamento,"AGRA") , ano_exercicio %in% c(2015,2016)) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% kable(col.na = c("Detalhamento", c(2016:2017)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 
@@ -264,14 +264,14 @@ A @tbl-detalhamento_inconsistencia_nome_02 nos apresenta um novo desafio, até 2
 #| message: false
 #| error: false
 #| label: tbl-detalhamento_inconsistencia_nome_02
-#| tbl-cap: Detalhamento da receita - inconsitência no nome
+#| tbl-cap: Detalhamento da receita - inconsistência no nome
 
 receita %>% filter( str_detect(detalhamento,"REMUNER.DISPONIBILIDADES"),str_detect(detalhamento,"PRINC"),  ano_exercicio %in% c(2021,2022)) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange((ano_exercicio))  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% kable(col.na = c("Detalhamento", c(2016:2017)),digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 ### Tipo de receita
 
-O Tipo da receita segue a estrutura apresentada na @fig-receita_tipo, contudo a base de dados não traz os códigos da receita. Eu tentei idenficar os tipos a partir dos nomes contidos no detalhamento da receita. Para simplificar, ao invés de cinco códigos (0 ao 4), eu apliquei apenas três códigos: 01 - Principal, 02 - Intra e 03 - Dívida Ativa, Multas e Juros.
+O Tipo da receita segue a estrutura apresentada na @tbl-tipo_receita contudo a base de dados não traz os códigos da receita. Eu tentei identificar os tipos a partir dos nomes contidos no detalhamento da receita. Para simplificar, ao invés de cinco códigos (0 ao 4), eu apliquei apenas três códigos: 01 - Principal, 02 - Intra e 03 - Dívida Ativa, Multas e Juros.
 
 A @tbl-tipo_receita agrupa os valores arrecados por tipo (segundo os critérios que estabeleci).
 
@@ -307,7 +307,7 @@ receita %>% filter(startsWith(detalhamento, "IR") | startsWith(detalhamento, "IP
 
 ### Dividendos
 
-A @tbl-dividendos apresenta o valor previsto, o realizado e o resultdado da arrecadação de dividendos por parte da União. Ressaltamos os que dividendos recebidos estão relacionados à quantidade de estatais, à participação da União das estatais, ao lucro da estatais e à política de dividendos das estatais.
+A @tbl-dividendos apresenta o valor previsto, o realizado e o resultado da arrecadação de dividendos por parte da União. Ressaltamos os que dividendos recebidos estão relacionados à quantidade de estatais, à participação da União das estatais, ao lucro das estatais e à política de dividendos das estatais.
 
 ```{r dividendos}
 #| warning: false
@@ -331,3 +331,32 @@ A falta do código da receita é o principal limitador, pois praticamente inviab
 ### Data lançamento
 
 Séries temporais mensais só podem ser elaboradas a partir de jan/2016, uma vez que de 2013 a 2015 a data lançamento tem o valor de 31/12.
+
+```{r}
+nome_empresa_2 <- function(empresa_find, base){
+empresa_max <-  str_to_upper(  max(base[agrep(empresa_find,base, ignore.case = TRUE)]))
+empresa <-  empresa_find
+df <- data.frame(empresa, empresa_max)
+}
+
+lll <- map2_df(unique(receita$detalhamento), unique(receita$detalhamento), nome_empresa_2)
+
+nome_especie <- function(empresa_find){
+empresa_max <-   max(unique(receita$especie_receita)[agrep(empresa_find,unique(receita$especie_receita), ignore.case = TRUE)])
+empresa <- empresa_find
+df <- data.frame(empresa, empresa_max)
+}
+
+
+nome_detalhamento <- function(empresa_find){
+empresa_max <-   max(unique(receita$detalhamento)[agrep(empresa_find,unique(receita$detalhamento), ignore.case = TRUE)])
+empresa <- empresa_find
+df <- data.frame(empresa, empresa_max)
+}
+
+nome_especie_max <- map_df(unique(receita$especie_receita),  nome_especie)
+
+
+
+
+```

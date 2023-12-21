@@ -1,0 +1,115 @@
+---
+title: "Fórmulas"
+editor: visual
+lang: "pt"
+format:
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+  error: false
+  freeze: auto  # re-render only when source changes  
+---
+
+Neste projeto nós vamos abordar os dados da receita pública disponíveis em [dados abertos](https://portaldatransparencia.gov.br/download-de-dados).
+
+```{r bibliotecas}
+#| warning: false
+#| message: false
+#| error: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(knitr)
+library(kableExtra)
+library(DescTools)
+library(zoo)
+library(stringr)
+
+```
+
+```{r funcoes_e_opcoes}
+
+# negar %in%
+`%notin%` <- Negate(`%in%`)
+
+# formato dos numeros
+myNumFmt <- as.fmt(digits=0, big.mark=".")
+
+options(scipen = 999)
+```
+
+## Estrutura da receita orçamentária
+
+```{r}
+# get all the zip files
+zipF <- list.files(path = "~/R/dados_abertos/servidores/servidores/ate_2020/bacen", pattern = "*Remuneracao.zip", full.names = TRUE)
+library(plyr)
+library(purrr)
+library(readr)
+# unzip all your files
+ldply(.data = zipF, .fun = unzip, exdir =  "~/R/dados_abertos/servidores/servidores/ate_2020/bacen")
+
+ler_arquivos <- function(caminho, padrao) {
+  library(plyr)
+  library(purrr)
+  library(readr)
+  
+  zipF <- list.files(path = caminho, pattern = padrao, full.names = TRUE)
+  
+  ldply(.data = zipF, .fun = unzip, exdir =  x)
+  
+  read_delim(x,
+             delim = ";", escape_double = FALSE,
+             col_types = cols(MES = col_character(), ANO = col_character(), UF_EXERCICIO = col_character(), COD_ORG_EXERCICIO =               col_double(), Id_SERVIDOR_PORTAL = col_character() ), 
+             locale = locale(decimal_mark = ",", grouping_mark = ".", 
+             encoding = "Latin1"), trim_ws = TRUE)
+   arquivos <- list.files(x, pattern='*.csv')
+   
+   } 
+agrupar <- function(x){ler_bacen(x) %>% group_by(uf, nome_municipio, mes_referencia) %>% summarise(valor = sum(valor_parcela), quantidade = n())
+  arquivos <- list.files(x, pattern='*.csv')
+  arquivos <- map_df(arq_arquivos,ler_arquivos)
+  } 
+
+setwd("~/R/dados_abertos/servidores/servidores/ate_2020/bacen")
+df_teste <- map_df(arquivos,ler_arquivos)
+
+
+```
+
+```{r}
+# get all the zip files
+x <- c("~/R/dados_abertos/servidores/servidores/ate_2020/militares")
+
+
+
+extrair_csv <- function(x, y) {
+  # get all the zip files
+zipF <- list.files(path = x, pattern = "*.zip", full.names = TRUE)
+library(plyr)
+# unzip all your files
+ldply(.data = zipF, .fun = unzip, exdir =  x)
+arquivos_csv <- list.files(x, pattern=y)
+
+}
+
+ler_arquivos <- function(x) {read_delim(x, 
+                                      delim = ";", escape_double = FALSE, col_types = cols(MES = col_character()), 
+                                      locale = locale(decimal_mark = ",", grouping_mark = ".", 
+                                                      encoding = "Latin1"), trim_ws = TRUE)} 
+# agrupar <- function(x){ler_jetons(x) %>% group_by(uf, nome_municipio, mes_referencia) %>% summarise(valor = sum(valor_parcela), quantidade = n())} 
+arquivos_csv <- extrair_csv(x, "Cadastro.csv")
+setwd(x)
+df <- map_df(arquivos_csv,ler_arquivos)
+
+df <- df %>% clean_names() 
+# write_csv(jetons,"jetons.csv")
+
+```
