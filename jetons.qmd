@@ -240,6 +240,10 @@ Tanto a variação do valores dos jetons dentro de um mês quanto a variação d
 
 ### Visão geral
 
+O @fig-plot_jetons traz uma série histórica para o perídodo de 2013 a 2023 com o valor do maior jeton pago por cada empresa em cada ano. O maior valor foi o de R\$ 77 mil pagos pela Petrobras em 2022.
+
+Na nossa base de dados `r  round(nrow( jetons %>% group_by(empresa_final, ano) %>% summarize(valor = round(max(valor),0)/1000) %>% filter(valor>2) %>% count() )/nrow( jetons %>% group_by(empresa_final, ano) %>% summarize(valor = round(max(valor),0)/1000) %>% count() )*100,0)` % das empresas pagou jetons de até R\$ 2.000.
+
 ```{r visao_geral}
 #| warning: false
 #| message: false
@@ -250,13 +254,15 @@ Tanto a variação do valores dos jetons dentro de um mês quanto a variação d
 
 
 
-p <- ggplot(jetons %>% group_by(empresa_final, ano) %>% summarize(valor = round(max(valor),0)) , aes(valor, ano, color = empresa_final)) +
-  geom_jitter ()+ coord_flip()+ theme(legend.position="none") 
+p <- ggplot(jetons %>% group_by(empresa_final, ano) %>% summarize(valor = round(max(valor),0)/1000) , aes(valor, ano, color = empresa_final)) +
+  geom_jitter ()+ coord_flip()+ theme(legend.position="none") +labs(x= "Jetons (R$ mil)") 
 
 ggplotly(p)
 ```
 
 ### Maiores jetons pagos em um único mês
+
+As empresas Petrobras, Itaipú, BNDES e Embraer lideram a lista dos maiores jetons pagos em um único mês. Os maiores jetons superam o motante de R\$ `r  as.integer(min((jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>% group_by(empresa_final, data, nome_id) %>% summarise(valor = max(valor/1000, na.rm = TRUE))  %>% arrange(desc(valor)) %>% head(20))[4:4]))` mil e o maior de todos, pago pela Petrobras, alcança a marca de R\$ `r  as.integer(max((jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>% group_by(empresa_final, data, nome_id) %>% summarise(valor = max(valor/1000, na.rm = TRUE))  %>% arrange(desc(valor)) %>% head(20))[4:4]))` mil.
 
 ```{r maiores_jetons}
 #| warning: false
@@ -279,7 +285,7 @@ jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"
 
 ### Servidores que mais receberam jetons
 
-A base da dados retorna `r Format(length( unique(jetons$nome_id)), fmt=myNumFmt)` registros únicos para o atributo nome_id.
+De 2013 a 2023 foi pago o montante de R\$ `r Format(as.integer(max((jetons %>% group_by(nome_id) %>% summarise(valor = sum(valor/1000)) %>% arrange(desc(valor)) %>% head(20))[2:2])), fmt=myNumFmt)` a um único conselheiro.
 
 ```{r total_jetons_recebidos}
 #| warning: false
@@ -296,6 +302,10 @@ jetons %>% group_by(nome_id) %>% summarise(valor = sum(valor)) %>% arrange(desc(
 ```
 
 ### Empresas que mais pagaram jetons
+
+O BNDES liderou o pagamento de jetons de 2013 a 2023 com o montante de R\$ `r Format(round(max((jetons %>% group_by( empresa_final) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor)) %>% head(20))[2:2]),2), fmt=myNumFmt)` milhões
+
+As 20 maiores pagadoras de jetons pagaram um total de R\$ `r Format(round(sum((jetons %>% group_by( empresa_final) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor)) %>% head(20))[2:2]),2), fmt=myNumFmt)` milhões
 
 ```{r maiores_pagadores_de_jetons}
 #| warning: false
