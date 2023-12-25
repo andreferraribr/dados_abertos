@@ -80,7 +80,7 @@ jetons <- read_csv("~/R/dados_abertos/servidores/jetons/jetons.csv")
 
 ### Atributo *nome_id*
 
-O foco do nosso estudo não é o indivíduo, por este motivo criamos o atrituto *nome_id* (junção das 4 primeiras letras do nome e o id do servidor), para manter a privacidade das pessoas. Seguimos um padrão semelhante ao utilizado no estudo sobre os favorecidos @tbl-nome_codigo .
+O foco do nosso estudo não é o indivíduo, por este motivo criamos o atributo *nome_id* (junção das 4 primeiras letras do nome e o id do servidor), para manter a privacidade das pessoas. Seguimos um padrão semelhante ao utilizado no estudo sobre os favorecidos @tbl-nome_codigo .
 
 ```{r nome_id}
 #| warning: false
@@ -178,7 +178,7 @@ jetons %>% filter(empresa %in% c ("BB SEGURIDADE PARTICIPAÇÕES S.A.","CAIXA SE
 
 ### Atributo *empresa_final*
 
-A última etapa para sanar as inconsitências nos nomes das empresas consitiu em criar o atributo *empresa_final* a partir de regras específicas. De agora em diante utilizaremos o atributo e*mpresa_final* para identificar as empresas.
+A última etapa para sanar as inconsistências nos nomes das empresas consistiu em criar o atributo *empresa_final* a partir de regras específicas. De agora em diante utilizaremos o atributo e*mpresa_final* para identificar as empresas.
 
 ```{r nome_empresa_final}
 #| warning: false
@@ -222,7 +222,7 @@ jetons %>%  group_by(empresa_final,ano, mes) %>% mutate(ano = as.character(ano))
 
 ```
 
-Já a @tbl-variacao_jetons_conselheiro mostra o maior e o menor jeton pago por uma empresa a um determinado conselheiro em um determinado ano. Por exemplo, em 2017, a Itaipu Binacional pagou para PAUL - 79015897 uma valor máximo de R\$ 27.402 e um valor mínimo de R\$ 274.
+Já a @tbl-variacao_jetons_conselheiro mostra o maior e o menor jeton pago por uma empresa a um determinado conselheiro em um determinado ano. Por exemplo, em 2017, a Itaipu Binacional pagou para PAUL - 79015897 um valor máximo de R\$ 27.402 e um valor mínimo de R\$ 274.
 
 ```{r}
 #| warning: false
@@ -234,13 +234,13 @@ Já a @tbl-variacao_jetons_conselheiro mostra o maior e o menor jeton pago por u
 (jetons %>%  group_by(empresa_final,ano,  nome_id) %>% mutate(ano = as.character(ano)) %>% summarise(maior = max(valor), menor = min(valor), diferenca = round(maior - menor,0) ,variacao = round(diferenca /menor,0)) %>% filter(variacao > 10, menor>2)  %>% arrange(desc(variacao)))%>% select(-diferenca, - variacao) %>% head(10)%>% kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
-Tanto a variação do valores dos jetons dentro de um mês quanto a variação dos valores recebidos pelos conselheiros instiga uma certa curiosidade. Contudo, o foco deste estudo não é verificar a oscilações dos valores.
+Tanto a variação dos valores dos jetons dentro de um mês quanto a variação dos valores recebidos pelos conselheiros instiga uma certa curiosidade. Contudo, o foco deste estudo não é verificar a oscilações dos valores.
 
 ## Apresentação dos dados
 
 ### Visão geral
 
-O @fig-plot_jetons traz uma série histórica para o perídodo de 2013 a 2023 com o valor do maior jeton pago por cada empresa em cada ano. O maior valor foi o de R\$ 77 mil pagos pela Petrobras em 2022.
+O @fig-plot_jetons traz uma série histórica para o período de 2013 a 2023 com o valor do maior jeton pago por cada empresa em cada ano. O maior valor foi o de R\$ 77 mil pagos pela Petrobras em 2022.
 
 Na nossa base de dados `r  round(nrow( jetons %>% group_by(empresa_final, ano) %>% summarize(valor = round(max(valor),0)/1000) %>% filter(valor>2) %>% count() )/nrow( jetons %>% group_by(empresa_final, ano) %>% summarize(valor = round(max(valor),0)/1000) %>% count() )*100,0)` % das empresas pagou jetons de até R\$ 2.000.
 
@@ -262,7 +262,7 @@ ggplotly(p)
 
 ### Maiores jetons pagos em um único mês
 
-As empresas Petrobras, Itaipú, BNDES e Embraer lideram a lista dos maiores jetons pagos em um único mês. Os maiores jetons superam o motante de R\$ `r  as.integer(min((jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>% group_by(empresa_final, data, nome_id) %>% summarise(valor = max(valor/1000, na.rm = TRUE))  %>% arrange(desc(valor)) %>% head(20))[4:4]))` mil e o maior de todos, pago pela Petrobras, alcança a marca de R\$ `r  as.integer(max((jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>% group_by(empresa_final, data, nome_id) %>% summarise(valor = max(valor/1000, na.rm = TRUE))  %>% arrange(desc(valor)) %>% head(20))[4:4]))` mil.
+As empresas Petrobras, Itaipu, BNDES e Embraer lideram a lista dos maiores jetons pagos em um único mês. Os maiores jetons superam o montante de R\$ `r  as.integer(min((jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>% group_by(empresa_final, data, nome_id) %>% summarise(valor = max(valor/1000, na.rm = TRUE))  %>% arrange(desc(valor)) %>% head(20))[4:4]))` mil e o maior de todos, pago pela Petrobras, alcança a marca de R\$ `r  as.integer(max((jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>% group_by(empresa_final, data, nome_id) %>% summarise(valor = max(valor/1000, na.rm = TRUE))  %>% arrange(desc(valor)) %>% head(20))[4:4]))` mil.
 
 ```{r maiores_jetons}
 #| warning: false
@@ -285,7 +285,7 @@ jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"
 
 ### Servidores que mais receberam jetons
 
-De 2013 a 2023 foi pago o montante de R\$ `r Format(as.integer(max((jetons %>% group_by(nome_id) %>% summarise(valor = sum(valor/1000)) %>% arrange(desc(valor)) %>% head(20))[2:2])), fmt=myNumFmt)` a um único conselheiro.
+De 2013 a 2023 um único conselheiro recebeu de R\$ `r Format(as.integer(max((jetons %>% group_by(nome_id) %>% summarise(valor = sum(valor)) %>% arrange(desc(valor)) %>% head(20))[2:2])), fmt=myNumFmt)` de jetons.
 
 ```{r total_jetons_recebidos}
 #| warning: false
@@ -320,3 +320,21 @@ jetons %>% group_by( empresa_final) %>% summarise(valor = sum(valor)/1000000) %>
 
 
 ```
+
+## Considerações finais
+
+### Ausência do CNPJ
+
+A principal limitação da base de dados é a ausência do atributo CNPJ.
+
+### Nome das empresas
+
+Encontramos inconsistências no nome das empresas.
+
+### Variação dos valores
+
+Os valores de jetons apresentam grande oscilações, seja para um mesmo conselheiro, seja para um mesmo período.
+
+### Futuros estudos
+
+Outros estudos poderiam investigar a oscilação nos valores dos jetons.
