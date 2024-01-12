@@ -1,0 +1,185 @@
+---
+title: "Bolsa Família"
+editor: visual
+lang: "pt"
+format:
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+  error: false
+  freeze: auto  # re-render only when source changes  
+---
+
+```{r bibliotecas}
+#| warning: false
+#| message: false
+#| error: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(knitr)
+library(kableExtra)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(leaflet)
+library(sf)
+library(geobr)
+```
+
+```{r funcoes_e_opcoes}
+# negar %in%
+`%notin%` <- Negate(`%in%`)
+
+# formato dos numeros
+myNumFmt <- as.fmt(digits=0, big.mark=".")
+
+options(scipen = 999)
+```
+
+```{r}
+#| eval: false
+
+# este bloco não será executado (eval = false)
+
+# segui esta dica: https://www.appsloveworld.com/r/100/49/how-can-i-extract-multiple-zip-files-and-read-those-csvs-in-r?expand_article=1
+
+caminho <- "~/R/dados_abertos/bolsa_familia"
+
+# get all the zip files
+zipF <- list.files(path = caminho, pattern = "*.zip", full.names = TRUE)
+library(plyr)
+# unzip all your files
+ldply(.data = zipF, .fun = unzip, exdir =  caminho)
+
+ler_bolsa_familia <- function(x) {read_delim(x, 
+                           delim = ";", escape_double = FALSE,
+                           col_types = cols(MES = col_character()),
+                           locale = locale(decimal_mark = ",", grouping_mark = ".",                            encoding = "Latin1"), trim_ws = TRUE) } 
+
+arq_bolsa_familia <- list.files(caminho, pattern='*.csv')
+setwd(caminho)
+
+bolsa_familia <- map_df(arq_bolsa_familia,ler_bolsa_familia)
+
+bolsa_familia <- bolsa_familia %>% group_by(uf, nome_municipio, mes_referencia, codigo_municipio_siafi) %>% summarise(valor = sum(valor_parcela), quantidade = n()) 
+write_csv(bolsa_familia,"bolsa_familia_01.csv")
+```
+
+```{r}
+bolsa_familia <- read.csv("bolsa_familia.csv")
+
+uf_regiao <- read_excel("uf_regiao.xlsx")
+
+muni <- read_municipality(
+    showProgress = FALSE, year=2020
+  )
+estados <- read_state(showProgress = FALSE, year=2020)
+
+```
+
+```{r}
+#| eval: false
+bolsa_familia %>% group_by(name, uf) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor)) %>% head(20) %>% kable(col.names = c("Município" ,"UF", "Valor  (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+
+
+
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-regiao
+#| tbl-cap: Bolsa Família por região.
+
+
+
+
+left_join(  uf_regiao, bolsa_familia, by = c("uf" = "uf"))  %>% group_by(regiao) %>% summarise(valor = sum(valor)/1000000 ,participacao = sum(quantidade)/sum(pop_21)*100) %>% arrange(desc(participacao)) %>% arrange(desc(participacao))   %>% kable(col.names = c("Região", "Valor (R$ mi)", "Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-uf
+#| tbl-cap: Bolsa Família por UF.
+
+bolsa_familia %>% group_by( uf) %>% summarise(valor = sum(valor)/1000000 ,participacao = sum(quantidade)/sum(pop_21)*100) %>% arrange(desc(participacao)) %>% arrange(desc(participacao))   %>% kable(col.names = c("UF", "Valor (R$ mi)", "Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+
+
+
+
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-municipio_maior_dependencia
+#| tbl-cap: Bolsa Família - municípios mais dependentes.
+bolsa_familia %>% group_by(name, uf,  pop_21) %>% summarise( quantidade, participacao) %>% filter(participacao>15)%>% arrange(desc(participacao)) %>% head(20)%>% kable(col.names = c("Município" ,"UF",  "População em 2021", "Beneficiários","Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-municipio_menor_dependencia
+#| tbl-cap: Bolsa Família - municípios menos dependentes.
+
+bolsa_familia %>% group_by(name, uf, mes, pop_21) %>% summarise( quantidade, participacao) %>% filter(participacao<7)%>% arrange((participacao)) %>% head(20)%>% kable(col.names = c("Município" ,"UF", "Mês", "População em 2021", "Beneficiários","Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+```
+
+```{r}
+
+
+top_250 =  (bolsa_familia %>% arrange(desc(participacao)) %>% head(250))[8:8]
+
+bolsa_familia_muni <- left_join(muni %>% filter(code_muni %in% top_250$codigo_ibge)  %>% select(code_muni,name_muni,name_region,name_state,abbrev_state,geom),bolsa_familia, by = c("code_muni"="codigo_ibge"))
+
+bolsa_familia_estados <- left_join(estados  ,bolsa_familia %>% group_by(uf) %>% summarise(valor = sum(valor), populacao = sum(pop_21), quantidade = sum(quantidade)) %>% mutate(participacao = quantidade/populacao*100), by = c("abbrev_state"="uf"))
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-mapa_bolsa_familia
+#| fig-cap: Bolsa Família - mapa da dependência.
+pal <- colorNumeric(
+  palette = "Blues",
+  domain = bolsa_familia_estados$participacao)
+
+pal2 <- colorNumeric(
+  palette = "Reds",
+  domain = bolsa_familia$participacao)
+
+
+leaflet( bolsa_familia_estados) %>% 
+  addPolygons(    stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1,
+    color = ~pal(participacao), popup = ~paste0( abbrev_state, ": ", round(participacao,1)))%>%
+  addLegend("bottomright", pal = pal, values = ~participacao,
+    title = "% da População",
+    labFormat = labelFormat(prefix = "%"),
+    opacity = 1
+  ) %>% 
+  
+  addPolygons( data= bolsa_familia_muni,   stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1  , popup = ~paste0(name_muni, "-", abbrev_state, ": ", round(participacao,1)), color = ~pal2(participacao))
+
+
+
+
+
+
+
+```

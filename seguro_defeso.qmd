@@ -1,0 +1,119 @@
+---
+title: "Seguro Defeso"
+editor: visual
+lang: "pt"
+format:
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+  error: false
+  freeze: auto  # re-render only when source changes  
+---
+
+```{r bibliotecas}
+#| warning: false
+#| message: false
+#| error: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(knitr)
+library(kableExtra)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(leaflet)
+library(geobr)
+```
+
+```{r funcoes_e_opcoes}
+# negar %in%
+`%notin%` <- Negate(`%in%`)
+
+# formato dos numeros
+myNumFmt <- as.fmt(digits=0, big.mark=".")
+
+options(scipen = 999)
+```
+
+```{r}
+seguro_defeso <- read_csv("~/R/dados_abertos/seguro_defeso/seguro_defeso.csv")
+```
+
+```{r}
+tabmun <-  read_delim("TABMUN.csv", delim = ";", 
+    escape_double = FALSE, locale = locale(date_names = "pt"), 
+    trim_ws = TRUE)
+seguro_defeso <- left_join(seguro_defeso,tabmun, by = c("codigo_municipio_siafi"=  "municipio"))
+municipios <- read_csv("municipios.csv")
+seguro_defeso <- left_join(seguro_defeso,municipios %>% select(municipio, name, is_capital,mesoregion,microregion,rgint,rgi, pop_21 ,lon,lat), by = c("codigo_ibge"="municipio"))
+
+seguro_defeso <- seguro_defeso %>% mutate(mes = parse_date_time(mes_referencia,"ym"), participacao = quantidade/pop_21*100, independente = 100-participacao)
+```
+
+```{r}
+
+ggplot(seguro_defeso  %>% group_by(mes) %>% summarise(valor = sum(valor)/1000000000), aes(x=mes, y=valor)) + 
+  geom_area(stat = "identity", fill = "red")
+   
+```
+
+```{r}
+
+```
+
+```{r}
+leaflet() %>% addTiles() %>%
+  addCircles( data = seguro_defeso %>% filter(mes_referencia =="202301", participacao>5), color = "red", weight = 1,
+    radius = ~sqrt(participacao) * 30, popup = ~ paste0(name, "-", uf," ",Format( valor, fmt=myNumFmt)
+  ))
+```
+
+```{r}
+seguro_defeso %>% group_by(name, uf) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor)) %>% head(20) %>% kable(col.names = c("Município" ,"UF", "Valor  (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+
+seguro_defeso %>% group_by( uf) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor))  %>% kable(col.names = c("UF", "Valor (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+
+seguro_defeso %>% group_by(name, uf, mes, pop_21) %>% summarise( quantidade, participacao) %>% filter(participacao>30)%>% arrange(desc(participacao))%>% kable(col.names = c("Município" ,"UF", "Mês", "População em 2021", "Beneficiários","Participação"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+
+seguro_defeso %>% group_by(name, uf, mes, pop_21) %>% summarise( quantidade, participacao) %>% filter(participacao<5)%>% arrange((participacao)) %>% head(100)%>% kable(col.names = c("Município" ,"UF", "Mês", "População em 2021", "Beneficiários","Participação"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+
+
+
+
+seguro_defeso$pop_21
+```
+
+```{r}
+muni <- read_municipality(
+    showProgress = FALSE, year=2020
+  )
+
+
+
+seguro_defeso_geo <- left_join(muni,seguro_defeso , by = c("code_muni"="codigo_ibge"))
+
+seguro_defeso_geo <- seguro_defeso_geo%>% group_by(geom) %>% summarise(independente = min(independente))
+
+pal <- colorNumeric(
+  palette = "RdYlBu",
+  domain = seguro_defeso_geo$independente)
+
+binpal <- colorBin("Reds", seguro_defeso_geo$independente,  pretty = FALSE)
+
+leaflet(seguro_defeso_geo %>% filter(independente<80) ) %>%
+  addPolygons(stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1,
+    color = ~pal(independente))%>%
+  addLegend("bottomright", pal = pal, values = ~independente,
+
+    labFormat = labelFormat(prefix = "%"),
+    opacity = 1
+  )
+```
