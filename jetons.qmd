@@ -19,11 +19,9 @@ execute:
 #| warning: false
 #| message: false
 #| error: false
-library(readxl)
 library(tidyverse)
 library(janitor)
 library(lubridate)
-library(tidyverse)
 library(purrr)
 library(knitr)
 library(kableExtra)
@@ -46,26 +44,33 @@ options(scipen = 999)
 
 ## Importar e tratar dados
 
-Começamos a nossa jornada baixando do [Portal da Transparência](https://portaldatransparencia.gov.br/download-de-dados/servidores) os arquivos zippados. Depois utilizamos o código abaixo para identificar, extrair, ler e organizar em uma única tabela os arquivos mensais com os dados sobre jetons.
+Começamos a nossa jornada baixando do [Portal da Transparência](https://portaldatransparencia.gov.br/download-de-dados/servidores) os arquivos zippados. Depois utilizamos uma rotina para identificar, extrair, ler e organizar em uma única tabela os arquivos mensais com os dados sobre jetons.
 
-Para acelerar o processo, realizamos a leitura dos dados apenas uma vez e depois salvamos o resultado no arquivo "jetons.csv".
+Para acelerar o processo, realizamos previamente a leitura dos dados e depois salvamos o resultado no arquivo "jetons.csv".
 
-```{r}
+```{r rotina_unzip_criar_df}
 #| eval: false
 
+# este bloco não será executado (eval = false)
+
+# segui esta dica: https://www.appsloveworld.com/r/100/49/how-can-i-extract-multiple-zip-files-and-read-those-csvs-in-r?expand_article=1
+
+caminho <- "~/R/dados_abertos/servidores/jetons"
+
 # get all the zip files
-zipF <- list.files(path = "~/R/dados_abertos/servidores/jetons", pattern = "*.zip", full.names = TRUE)
+zipF <- list.files(path = caminho, pattern = "*.zip", full.names = TRUE)
 library(plyr)
 # unzip all your files
-ldply(.data = zipF, .fun = unzip, exdir =  "~/R/dados_abertos/servidores/jetons")
+ldply(.data = zipF, .fun = unzip, exdir =  caminho)
 
 ler_jetons <- function(x) {read_delim(x, 
-                                      delim = ";", escape_double = FALSE, col_types = cols(MES = col_character()), 
-                                      locale = locale(decimal_mark = ",", grouping_mark = ".", 
-                                                      encoding = "Latin1"), trim_ws = TRUE)} 
+                           delim = ";", escape_double = FALSE,
+                           col_types = cols(MES = col_character()),
+                           locale = locale(decimal_mark = ",", grouping_mark = ".",                            encoding = "Latin1"), trim_ws = TRUE)} 
 
-arq_jetons <- list.files("C:/Users/andre.ferrari/Documents/R/dados_abertos/servidores/jetons", pattern='*.csv')
-setwd("C:/Users/andre.ferrari/Documents/R/dados_abertos/servidores/jetons")
+arq_jetons <- list.files(caminho, pattern='*.csv')
+setwd(caminho)
+
 jetons <- map_df(arq_jetons,ler_jetons)
 
 jetons <- jetons %>% clean_names() 
@@ -100,7 +105,7 @@ jetons %>% group_by(nome_id) %>% summarise(nome_id = max(nome_id)) %>% head(10) 
 
 Infelizmente a base de dados não traz o CNPJ das empresas. Enfrentamos desafio semelhante com a base de dados da receita @sec-inconsistencia_nomes
 
-A tabela *jetons* retorna `r Format(length( unique(jetons$empresa)), fmt=myNumFmt)` registros únicos para o atributo *empresa*. Ao olhar rapidamente os dados, percebemos nomes parecidos para o que parece ser uma única mesma empresa. A @tbl-nome_empresa_gas, por exemplo, traz quatro nomes semelhantes para a GÁS BRASILIANO DISTRIBUIDORA S.A. - GBD. As variações são por conta de acentos, a sigla da empresa e outros pequenos detalhes.
+A tabela *jetons* retorna `r Format(length( unique(jetons$empresa)), fmt=myNumFmt)` registros únicos para o atributo *empresa*. Ao olhar rapidamente os dados, percebemos nomes parecidos para o que parecia ser uma única mesma empresa. A @tbl-nome_empresa_gas, por exemplo, traz quatro nomes semelhantes para a GÁS BRASILIANO DISTRIBUIDORA S.A. - GBD. As variações são por conta de acentos, a sigla da empresa e outros pequenos detalhes.
 
 ```{r nome_empresa_gas}
 #| warning: false
@@ -130,7 +135,9 @@ nome_empresa <- function(empresa_find){
 # empresa_find é a base que será utilizada
 # empresa_find é igual à unique(jetons$empresa) tentei utilizar empresa_find como ao invés de  unique(jetons$empresa), mas apresentava problema na hora de fazer map_df. Em outra oportunidade posso tentar simplificar a função nome_empresa, desde que consiga fazer o map_df ou laply 
 empresa_upper <-  str_to_upper( max(unique(jetons$empresa)[agrep(empresa_find,unique(jetons$empresa), ignore.case = TRUE)]))
+
 empresa <- empresa_find
+
 df <- data.frame(empresa, empresa_upper)
 }
 
@@ -160,7 +167,9 @@ Agora, ao invés de trabalhar com `r Format(length( unique(jetons$empresa)), fmt
 #| label: tbl-nome_empresa_upper
 #| tbl-cap: Agrupamento dos nomes - etapa 1 (empresa_upper).
 
-nome_empresa_novo %>% group_by(empresa_upper) %>% count() %>% arrange(desc(n)) %>% head(10) %>% kable( col.names = c("atributo empresa upper","quantidade de nomes agrupados"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+nome_empresa_novo %>% group_by(empresa_upper) %>%
+                  count() %>% arrange(desc(n)) %>% head(10) %>%
+                  kable( col.names = c("atributo empresa upper","quantidade de nomes agrupados"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 
 
 ```
@@ -173,7 +182,17 @@ A função *nome_empresa* facilitou o tratamento dos dados, mas ainda restavam a
 #| error: false
 #| label: tbl-nome_empresa_upper_problemas
 #| tbl-cap: Agrupamento dos nomes - etapa 2 (inconsistências).
-jetons %>% filter(empresa %in% c ("BB SEGURIDADE PARTICIPAÇÕES S.A.","CAIXA SEGURIDADE E PARTICIPAÇÕES S.A.", "COMPANHIA DE DOCAS DO PARÁ - CDP", "COMPANHIA DOCAS DO CEARÁ - CDC", "ompanhia Imobiliária de Brasília - TERRACAP" ,  "U BINACIONAL", "REMPRESA BRASILEIRA DE AERONAUTICA","SA BRASILEIRA DE AERONAUTICA") ) %>% group_by(empresa_upper,empresa) %>% count() %>% select(-n)%>% kable()
+jetons %>%
+  filter(empresa %in% c ("BB SEGURIDADE PARTICIPAÇÕES S.A.",
+                         "CAIXA SEGURIDADE E PARTICIPAÇÕES S.A.",
+                         "COMPANHIA DE DOCAS DO PARÁ - CDP",
+                         "COMPANHIA DOCAS DO CEARÁ - CDC",
+                         "ompanhia Imobiliária de Brasília - TERRACAP" ,
+                         "U BINACIONAL",
+                         "REMPRESA BRASILEIRA DE AERONAUTICA",
+                         "SA BRASILEIRA DE AERONAUTICA") ) %>%
+                        group_by(empresa_upper,empresa) %>% count() %>%
+                        select(-n)%>% kable()
 ```
 
 ### Atributo *empresa_final*
@@ -190,11 +209,17 @@ A última etapa para sanar as inconsistências nos nomes das empresas consistiu 
 
 jetons <-  jetons %>% mutate( empresa_final  = case_when(
 empresa_upper == "OMPANHIA IMOBILIÁRIA DE BRASÍLIA - TERRACAP" ~ "COMPANHIA IMOBILIÁRIA DE BRASÍLIA - TERRACAP",
+
 empresa_upper == "ITAIPUBINACIONAL" ~ "ITAIPU BINACIONAL",
+
 empresa_upper == "CAIXA SEGURIDADE E PARTICIPAÇÕES S.A." & empresa ==  "BB SEGURIDADE PARTICIPAÇÕES S.A." ~ "BB SEGURIDADE PARTICIPAÇÕES S.A.",
+
 empresa_upper == "COMPANHIA DOCAS DO PARÁ - CDP" & empresa ==  "COMPANHIA DOCAS DO CEARÁ - CDC" ~ "COMPANHIA DOCAS DO CEARÁ - CDC",
+
 empresa_upper == "REMPRESA BRASILEIRA DE AERONAUTICA" ~ "EMPRESA BRASILEIRA DE AERONAUTICA",
+
 empresa_upper == "SA BRASILEIRA DE AERONAUTICA" ~ "EMPRESA BRASILEIRA DE AERONAUTICA",
+
 empresa_upper == "U BINACIONAL" ~ "ITAIPU BINACIONAL",
 
 TRUE ~ empresa_upper
@@ -202,7 +227,19 @@ TRUE ~ empresa_upper
 ))
 
 
-jetons %>% filter(empresa %in% c ("BB SEGURIDADE PARTICIPAÇÕES S.A.","CAIXA SEGURIDADE E PARTICIPAÇÕES S.A.", "COMPANHIA DE DOCAS DO PARÁ - CDP", "COMPANHIA DOCAS DO CEARÁ - CDC", "ompanhia Imobiliária de Brasília - TERRACAP" , "ITAIPU BINACIONAL", "U BINACIONAL", "EMPRESA BRASILEIRA DE AERONAUTICA","REMPRESA BRASILEIRA DE AERONAUTICA","SA BRASILEIRA DE AERONAUTICA") ) %>% group_by(empresa_final, empresa_upper,empresa) %>% count() %>% select(-n)%>% arrange(empresa_final) %>%    kable() 
+jetons %>% 
+  filter(empresa %in% c ("BB SEGURIDADE PARTICIPAÇÕES S.A.",
+                         "CAIXA SEGURIDADE E PARTICIPAÇÕES S.A.", 
+                         "COMPANHIA DE DOCAS DO PARÁ - CDP", 
+                         "COMPANHIA DOCAS DO CEARÁ - CDC", 
+                         "ompanhia Imobiliária de Brasília - TERRACAP" ,
+                         "ITAIPU BINACIONAL", "U BINACIONAL", 
+                         "EMPRESA BRASILEIRA DE AERONAUTICA",
+                         "REMPRESA BRASILEIRA DE AERONAUTICA",
+                         "SA BRASILEIRA DE AERONAUTICA") ) %>%
+                         group_by(empresa_final, empresa_upper,empresa) %>%
+                         count() %>% select(-n)  %>%
+                         arrange(empresa_final) %>%    kable() 
 
 ```
 
@@ -217,7 +254,15 @@ A @tbl-variacao_jetons_mes apresenta os maiores e menores valores de jetons pago
 #| label: tbl-variacao_jetons_mes
 #| tbl-cap: Variação do jeton para uma mesma empresa, ano e mês.
 
-jetons %>%  group_by(empresa_final,ano, mes) %>% mutate(ano = as.character(ano)) %>% summarise(maior = max(valor), menor = min(valor), diferenca = round(maior - menor,0) ,variacao = round(diferenca /menor,0)) %>% filter(variacao > 10, menor>2)  %>% arrange(desc(variacao)) %>% select(-diferenca, - variacao) %>% head(10)  %>% kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ",")) 
+jetons %>%  group_by(empresa_final,ano, mes) %>%
+            mutate(ano = as.character(ano)) %>%
+            summarise(maior = max(valor), menor = min(valor), 
+            diferenca = round(maior - menor,0) ,
+            variacao = round(diferenca /menor,0)) %>% 
+            filter(variacao > 10, menor>2)  %>%
+            arrange(desc(variacao)) %>%
+            select(-diferenca, - variacao) %>% head(10)  %>% 
+            kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ",")) 
 
 
 ```
@@ -231,7 +276,14 @@ Já a @tbl-variacao_jetons_conselheiro mostra o maior e o menor jeton pago por u
 #| label: tbl-variacao_jetons_conselheiro
 #| tbl-cap: Variação do jeton para uma mesma empresa, ano e conselheiro.
 
-(jetons %>%  group_by(empresa_final,ano,  nome_id) %>% mutate(ano = as.character(ano)) %>% summarise(maior = max(valor), menor = min(valor), diferenca = round(maior - menor,0) ,variacao = round(diferenca /menor,0)) %>% filter(variacao > 10, menor>2)  %>% arrange(desc(variacao)))%>% select(-diferenca, - variacao) %>% head(10)%>% kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+jetons %>%  group_by( empresa_final,ano,  nome_id) %>% 
+            mutate(ano = as.character(ano)) %>% 
+            summarise(maior = max(valor), menor = min(valor), 
+            diferenca = round(maior - menor,0) , 
+            variacao = round(diferenca /menor,0)) %>%
+            filter(variacao > 10, menor>2)  %>%       arrange(desc(variacao))%>% 
+            select(-diferenca, - variacao) %>% head(10)%>%  
+            kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 Tanto a variação dos valores dos jetons dentro de um mês quanto a variação dos valores recebidos pelos conselheiros instiga uma certa curiosidade. Contudo, o foco deste estudo não é verificar a oscilações dos valores.
@@ -249,13 +301,16 @@ Na nossa base de dados `r  round(nrow( jetons %>% group_by(empresa_final, ano) %
 #| message: false
 #| error: false
 #| label: fig-plot_jetons
-#| fig-cap: Valor médio dos pagamentos de jetons por ano e por empresa.
+#| fig-cap: Valor máximo dos pagamentos de jetons por ano e por empresa.
 
 
 
 
-p <- ggplot(jetons %>% group_by(empresa_final, ano) %>% summarize(valor = round(max(valor),0)/1000) , aes(valor, ano, color = empresa_final)) +
-  geom_jitter ()+ coord_flip()+ theme(legend.position="none") +labs(x= "Jetons (R$ mil)") 
+p <- ggplot(jetons %>% group_by(empresa_final, ano) %>% 
+            summarize(valor = round(max(valor),0)/1000) , 
+            aes(valor, ano, color = empresa_final)) +
+            geom_jitter ()+ coord_flip()+ 
+            theme(legend.position="none") +labs(x= "Jetons (R$ mil)") 
 
 ggplotly(p)
 ```
@@ -274,8 +329,12 @@ As empresas Petrobras, Itaipu, BNDES e Embraer lideram a lista dos maiores jeton
 
 
 
-jetons %>% mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>% group_by(empresa_final, data, nome_id) %>% summarise(valor = max(valor, na.rm = TRUE))  %>% arrange(desc(valor)) %>% head(20) %>% kable(col.names = c("Empresa","Data","Servidor","(R$)"),digits = 0, format.args = list(big.mark = ".", decimal.mark = ",")) %>%
-  kable_styling(font_size = 9)
+jetons %>%   mutate (data = format(parse_date_time(paste0(jetons$ano,jetons$mes),"ym"), "%b-%Y"))%>%
+            group_by(empresa_final, data, nome_id) %>% 
+            summarise(valor = max(valor, na.rm = TRUE))  %>% 
+            arrange(desc(valor)) %>% head(20) %>%
+            kable(col.names = c("Empresa","Data","Servidor","(R$)"),
+            digits = 0, format.args = list(big.mark = ".", decimal.mark = ",")) 
 
 
 
@@ -294,8 +353,11 @@ De 2013 a 2023 um único conselheiro recebeu de R\$ `r Format(as.integer(max((je
 #| label: tbl-ranking_servidor_jetons
 #| tbl-cap: Servidores que mais receberam jetons.
 
-jetons %>% group_by(nome_id) %>% summarise(valor = sum(valor)) %>% arrange(desc(valor)) %>% head(20)%>% kable(col.names = c("Servidor",paste0("(R$) entre " , min(jetons$ano), " e ", max(jetons$ano))), digits = 0, format.args = list(big.mark = ".", decimal.mark = ",")) %>%
-  kable_styling(font_size = 9)
+jetons %>% group_by(nome_id) %>% 
+           summarise(valor = sum(valor)) %>% 
+           arrange(desc(valor)) %>% head(20)%>% 
+           kable(col.names = c("Servidor",paste0("(R$) entre " , min(jetons$ano), " e ", max(jetons$ano))), 
+          digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 
 
 
@@ -313,8 +375,11 @@ As 20 maiores pagadoras de jetons pagaram um total de R\$ `r Format(round(sum((j
 #| error: false
 #| label: tbl-ranking_empresas_jetons
 #| tbl-cap: Empresas que mais pagaram jetons.
-jetons %>% group_by( empresa_final) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor)) %>% head(20)%>% kable(col.names = c("Empresa",paste0("(R$ mi) entre " , min(jetons$ano), " e ", max(jetons$ano))),digits = 2, format.args = list(big.mark = ".", decimal.mark = ",")) %>%
-  kable_styling(font_size = 9)
+jetons %>% group_by( empresa_final) %>%
+           summarise(valor = sum(valor)/1000000) %>%
+           arrange(desc(valor)) %>% head(20)%>%
+           kable(col.names = c("Empresa",paste0("(R$ mi) entre " , min(jetons$ano), " e ", max(jetons$ano))),
+           digits = 2, format.args = list(big.mark = ".", decimal.mark = ",")) 
 
 
 

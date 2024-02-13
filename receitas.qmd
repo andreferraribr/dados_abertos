@@ -66,6 +66,9 @@ O nosso primeiro passo será importar os arquivos contendo os dados da receita. 
 Eu baixei todos os arquivos disponíveis, onze ao total. Em seguida criei a função "ler_receitas" para ler os arquivos csv baixados no meu computador.
 
 ```{r funcao_ler_receitas}
+#| warning: false
+#| message: false
+#| eval: false
 
 ler_receitas <- function(x) {read_delim(x, 
     delim = ";", escape_double = FALSE, col_types = cols(`DATA LANÇAMENTO` = col_date(format = "%d/%m/%Y")), 
@@ -82,10 +85,20 @@ arq_receita <- list.files("C:/Users/andre.ferrari/Documents/R/dados_abertos/rece
 ```
 
 ```{r map_para_ler_arquivos}
+#| warning: false
+#| message: false
+#| eval: false
 setwd("C:/Users/andre.ferrari/Documents/R/dados_abertos/receitas/dados_receitas")
 receita <- map_df(arq_receita,ler_receitas)%>% clean_names()
 
+write_csv(receita, "receita.csv")
 
+
+
+```
+
+```{r}
+receita <- read_csv("~/R/dados_abertos/receitas/dados_receitas/receita.csv")
 ```
 
 A partir da visão panorâmica dos dados é possível identificar quatro grandes grupos de informação:
@@ -302,7 +315,7 @@ Diante dos desafios da base de dados, eu optei por análises menos abrangentes. 
 #| label: tbl-ip_ipi
 #| tbl-cap: Arrecadação de IPI e IR (tipo principal entre 2016 e 2022 em Bi R$).
 
-receita %>% filter(startsWith(detalhamento, "IR") | startsWith(detalhamento, "IPI") , valor_realizado > 1, ano_exercicio %in% c(2016:2022), startsWith(tipo, "01")) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange (ano_exercicio, desc(valor))  %>% filter(valor > 0)  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% janitor::adorn_totals() %>% arrange(desc(2022))%>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) 
+receita %>% filter(startsWith(detalhamento, "IR") | startsWith(detalhamento, "IPI") , valor_realizado > 1, ano_exercicio %in% c(2016:2023), startsWith(tipo, "01")) %>% group_by(detalhamento, ano_exercicio) %>%  summarise(valor = round(sum(valor_realizado)/1000000000)) %>% arrange (ano_exercicio, desc(valor))  %>% filter(valor > 0)  %>% pivot_wider(names_from = ano_exercicio, values_from = valor) %>% janitor::adorn_totals() %>% arrange(desc(2023))%>% kable( digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) 
 ```
 
 ### Dividendos
@@ -315,7 +328,7 @@ A @tbl-dividendos apresenta o valor previsto, o realizado e o resultado da arrec
 #| error: false
 #| label: tbl-dividendos
 #| tbl-cap: Arrecadação de dividendos (2013 a 2022 em Bi R$).
-dividendos <- receita %>% filter(   startsWith( detalhamento,  "DIVIDE"), ano_exercicio != 2023) %>% group_by(ano_exercicio, origem_receita) %>% summarise(valor = sum(valor_realizado)/1000000000, previsto = sum(valor_previsto_atualizado)/1000000000) %>% mutate(ano_exercicio = as.character(ano_exercicio), resultado =(valor-previsto)) %>% pivot_wider(names_from = origem_receita, values_from = c( previsto, valor, resultado) ) 
+dividendos <- receita %>% filter(   startsWith( detalhamento,  "DIVIDE")) %>% group_by(ano_exercicio, origem_receita) %>% summarise(valor = sum(valor_realizado)/1000000000, previsto = sum(valor_previsto_atualizado)/1000000000) %>% mutate(ano_exercicio = as.character(ano_exercicio), resultado =(valor-previsto)) %>% pivot_wider(names_from = origem_receita, values_from = c( previsto, valor, resultado) ) 
 
 dividendos %>% kable(col.na = c("Ano", "Previsto", "Realizado", "Resultado"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") ) %>% column_spec(4, color = ifelse(dividendos$`resultado_Receita Patrimonial` < 0, "red", "blue"))
 ```

@@ -54,14 +54,14 @@ options(scipen = 999)
 caminho <- "~/R/dados_abertos/bolsa_familia"
 
 # get all the zip files
-zipF <- list.files(path = caminho, pattern = "*.zip", full.names = TRUE)
-library(plyr)
+# zipF <- list.files(path = caminho, pattern = "*.zip", full.names = TRUE)
+# library(plyr)
 # unzip all your files
-ldply(.data = zipF, .fun = unzip, exdir =  caminho)
+# ldply(.data = zipF, .fun = unzip, exdir =  caminho)
 
 ler_bolsa_familia <- function(x) {read_delim(x, 
-                           delim = ";", escape_double = FALSE,
-                           col_types = cols(MES = col_character()),
+                           delim = ";", escape_double = FALSE, col_types = cols(`MÊS REFERÊNCIA` = col_character(), 
+        `CÓDIGO MUNICÍPIO SIAFI` = col_character()),
                            locale = locale(decimal_mark = ",", grouping_mark = ".",                            encoding = "Latin1"), trim_ws = TRUE) } 
 
 arq_bolsa_familia <- list.files(caminho, pattern='*.csv')
@@ -69,12 +69,24 @@ setwd(caminho)
 
 bolsa_familia <- map_df(arq_bolsa_familia,ler_bolsa_familia)
 
-bolsa_familia <- bolsa_familia %>% group_by(uf, nome_municipio, mes_referencia, codigo_municipio_siafi) %>% summarise(valor = sum(valor_parcela), quantidade = n()) 
+bolsa_familia <- bolsa_familia %>% clean_names() %>% group_by(uf, nome_municipio, mes_referencia, codigo_municipio_siafi) %>% summarise(valor = sum(valor_parcela), quantidade = n()) 
 write_csv(bolsa_familia,"bolsa_familia_01.csv")
 ```
 
 ```{r}
-bolsa_familia <- read.csv("bolsa_familia.csv")
+bolsa_familia <- read.csv("bolsa_familia_01.csv")
+
+tabmun <-  read_delim("C:/Users/andre.ferrari/Documents/R/dados_abertos/seguro_defeso/TABMUN.csv", delim = ";", 
+    escape_double = FALSE, locale = locale(date_names = "pt"), 
+    trim_ws = TRUE) %>% mutate(municipio = as.integer(municipio))
+
+bolsa_familia <- left_join(bolsa_familia,tabmun %>% select(municipio, codigo_ibge), by = c("codigo_municipio_siafi"=  "municipio"))
+municipios <- read_csv("C:/Users/andre.ferrari/Documents/R/dados_abertos/seguro_defeso/municipios.csv")
+bolsa_familia <- left_join(bolsa_familia,municipios %>% select(municipio, name, uf_code,  pop_21 ), by = c("codigo_ibge"="municipio"))
+
+
+
+bolsa_familia <- bolsa_familia %>% mutate(mes = parse_date_time(mes_referencia,"ym"), participacao = quantidade/pop_21*100)
 
 uf_regiao <- read_excel("uf_regiao.xlsx")
 
@@ -87,7 +99,7 @@ estados <- read_state(showProgress = FALSE, year=2020)
 
 ```{r}
 #| eval: false
-bolsa_familia %>% group_by(name, uf) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor)) %>% head(20) %>% kable(col.names = c("Município" ,"UF", "Valor  (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+bolsa_familia%>% filter(mes_referencia == 202311) %>% group_by(name, uf) %>% summarise(valor = sum(valor)/1000000) %>% arrange(desc(valor)) %>% head(20) %>% kable(col.names = c("Município" ,"UF", "Valor  (R$ mi)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 
 
 
@@ -103,7 +115,7 @@ bolsa_familia %>% group_by(name, uf) %>% summarise(valor = sum(valor)/1000000) %
 
 
 
-left_join(  uf_regiao, bolsa_familia, by = c("uf" = "uf"))  %>% group_by(regiao) %>% summarise(valor = sum(valor)/1000000 ,participacao = sum(quantidade)/sum(pop_21)*100) %>% arrange(desc(participacao)) %>% arrange(desc(participacao))   %>% kable(col.names = c("Região", "Valor (R$ mi)", "Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+left_join(  uf_regiao, bolsa_familia%>% filter(mes_referencia == 202311), by = c("uf" = "uf"))  %>% group_by(regiao) %>% summarise(valor = sum(valor)/1000000 ,participacao = sum(quantidade)/sum(pop_21)*100) %>% arrange(desc(participacao)) %>% arrange(desc(participacao))   %>% kable(col.names = c("Região", "Valor (R$ mi)", "Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 ```
 
 ```{r}
@@ -113,8 +125,10 @@ left_join(  uf_regiao, bolsa_familia, by = c("uf" = "uf"))  %>% group_by(regiao)
 #| label: tbl-uf
 #| tbl-cap: Bolsa Família por UF.
 
-bolsa_familia %>% group_by( uf) %>% summarise(valor = sum(valor)/1000000 ,participacao = sum(quantidade)/sum(pop_21)*100) %>% arrange(desc(participacao)) %>% arrange(desc(participacao))   %>% kable(col.names = c("UF", "Valor (R$ mi)", "Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+bolsa_familia%>% filter(mes_referencia == 202311) %>% group_by( uf) %>% summarise(valor = sum(valor)/1000000 ,participacao = sum(quantidade)/sum(pop_21)*100) %>% arrange(desc(participacao)) %>% arrange(desc(participacao))   %>% kable(col.names = c("UF", "Valor (R$ mi)", "Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 
+
+bolsa_familia%>% filter(mes_referencia == 202311) %>% group_by( uf) %>% summarise(quantidade = sum(quantidade) ,participacao = sum(quantidade)/sum(pop_21)*100) %>% arrange(uf) %>% arrange(uf)   %>% kable(col.names = c("UF", "quantidade", "Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 
 
 
@@ -126,7 +140,7 @@ bolsa_familia %>% group_by( uf) %>% summarise(valor = sum(valor)/1000000 ,partic
 #| error: false
 #| label: tbl-municipio_maior_dependencia
 #| tbl-cap: Bolsa Família - municípios mais dependentes.
-bolsa_familia %>% group_by(name, uf,  pop_21) %>% summarise( quantidade, participacao) %>% filter(participacao>15)%>% arrange(desc(participacao)) %>% head(20)%>% kable(col.names = c("Município" ,"UF",  "População em 2021", "Beneficiários","Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
+bolsa_familia%>% filter(mes_referencia == 202311) %>% group_by(name, uf,  pop_21) %>% summarise( quantidade, participacao) %>% filter(participacao>15)%>% arrange(desc(participacao)) %>% head(20)%>% kable(col.names = c("Município" ,"UF",  "População em 2021", "Beneficiários","Participação (%)"), digits = 1, format.args = list(big.mark = ".", decimal.mark = ",") )
 
 ```
 
@@ -143,11 +157,11 @@ bolsa_familia %>% group_by(name, uf, mes, pop_21) %>% summarise( quantidade, par
 ```{r}
 
 
-top_250 =  (bolsa_familia %>% arrange(desc(participacao)) %>% head(250))[8:8]
+top_250 =  (bolsa_familia %>% arrange(desc(participacao)) %>% head(250))[7:7]
 
-bolsa_familia_muni <- left_join(muni %>% filter(code_muni %in% top_250$codigo_ibge)  %>% select(code_muni,name_muni,name_region,name_state,abbrev_state,geom),bolsa_familia, by = c("code_muni"="codigo_ibge"))
+bolsa_familia_muni <- left_join(muni %>% filter(code_muni %in% top_250$codigo_ibge)  %>% select(code_muni,name_muni,name_region,name_state,abbrev_state,geom),bolsa_familia%>% filter(mes_referencia == 202311), by = c("code_muni"="codigo_ibge"))
 
-bolsa_familia_estados <- left_join(estados  ,bolsa_familia %>% group_by(uf) %>% summarise(valor = sum(valor), populacao = sum(pop_21), quantidade = sum(quantidade)) %>% mutate(participacao = quantidade/populacao*100), by = c("abbrev_state"="uf"))
+bolsa_familia_estados <- left_join(estados  ,bolsa_familia %>% filter(mes_referencia == 202311) %>% group_by(uf) %>% summarise(valor = sum(valor), populacao = sum(pop_21), quantidade = sum(quantidade)) %>% mutate(participacao = quantidade/populacao*100), by = c("abbrev_state"="uf"))
 ```
 
 ```{r}
@@ -182,4 +196,12 @@ leaflet( bolsa_familia_estados) %>%
 
 
 
+```
+
+```{r}
+variacao <- bolsa_familia %>% filter (mes_referencia %in% c(202212,202311)) %>% group_by(uf ,mes_referencia ) %>% summarise( quantidade=sum(quantidade), pop_21=sum(pop_21)) %>% pivot_wider(names_from = mes_referencia, values_from = quantidade)
+
+colnames(variacao)[colnames(variacao) == "202311"] <- "atual"
+colnames(variacao)[colnames(variacao) == "202212"] <- "anterior"
+variacao <- variacao %>% mutate(diferenca=  atual - anterior, percentual =round( diferenca/pop_21*100,1))
 ```

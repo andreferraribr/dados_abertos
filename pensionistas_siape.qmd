@@ -1,0 +1,129 @@
+---
+title: "Pensionistas Siape"
+editor: visual
+lang: "pt"
+format:
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| warning: false
+#| message: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(deflateBR)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(DT)
+library(stringr)
+```
+
+```{r}
+
+pensionistas_siape_cadastro <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202311_Cadastro.csv", 
+    delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        decimal_mark = ",", grouping_mark = ".", 
+        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names()%>%  mutate (cpf_nome = paste0(str_sub( cpf,  start = 5L, end = -4L),"-" ,nome), cpf_instituidor = paste0(str_sub( cpf_instituidor_pensao,  start = 5L, end = -4L),"-",nome_instituidor_pensao))
+
+
+pensionistas_siape_remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202311_Remuneracao.csv", 
+    delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        decimal_mark = ",", grouping_mark = ".", 
+        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names() %>%  mutate (cpf_nome = paste0(str_sub( cpf , start = 5L, end = -4L),"-", nome))
+
+```
+
+```{r}
+glimpse(pensionistas_siape_cadastro)
+
+pensionistas_siape_cadastro %>% group_by(cpf_instituidor_pensao, nome_instituidor_pensao) %>% count() %>% arrange(desc(n)) %>% head(20) %>% kable()
+
+
+
+```
+
+```{r}
+glimpse(pensionistas_siape_remuneracao)
+```
+
+```{r}
+`%notin%` <- Negate(`%in%`)
+```
+
+```{r}
+tabela_pensionista_siape <- left_join(pensionistas_siape_remuneracao %>% select(ano,mes,id_servidor_portal, nome, cpf, remuneracao_basica_bruta_r),pensionistas_siape_cadastro )
+
+
+tabela_pensionista_siape <- tabela_pensionista_siape %>% mutate(inicio = year(parse_date_time(data_inicio_pensao,"dmy")))
+```
+
+```{r}
+tabela_pensionista_siape %>% filter( cpf_instituidor == "477.767-CILDO DE ASSIS SILVA") %>% summarise(valor = sum(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head() %>% kable()
+
+
+
+tabela_pensionista_siape %>%filter(cpf_instituidor != "NA-Sem informação") %>% group_by( cpf_instituidor, descricao_cargo_instituidor_pensao) %>% summarise(valor = sum(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head(20) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+
+tabela_pensionista_siape %>% mutate(ano = year(data_inicio_pensao)) %>% group_by(inicio) %>% summarise(valor = sum(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+p <- ggplot(tabela_pensionista_siape %>% group_by(inicio) %>% summarise(valor = sum(remuneracao_basica_bruta_r)), aes(x=inicio, y=valor)) +
+    geom_line()    # Use hollow circles
+
+ggplotly(p)
+```
+
+```{r}
+p <- ggplot(tabela_pensionista_siape %>% group_by( tipo_pensao)    %>% summarise(valor = sum(remuneracao_basica_bruta_r)) , aes(x=valor, y= tipo_pensao )) +
+    geom_col()    # Use hollow circles
+
+ggplotly(p)
+```
+
+```{r}
+tabela_pensionista_siape %>% group_by( descricao_cargo_instituidor_pensao)    %>% summarise(valor = sum(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head(10) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+tabela_pensionista_siape %>% group_by( descricao_cargo_instituidor_pensao)    %>% summarise(valor = sum(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head(20) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+
+tabela_pensionista_siape %>% group_by( descricao_cargo_instituidor_pensao)    %>% summarise(valor = mean(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% tail(20) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+tabela_pensionista_siape %>% group_by( descricao_cargo_instituidor_pensao)    %>% summarise(valor = mean(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head(20) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+tabela_pensionista_siape %>% group_by( regime_juridico_instituidor_pensao)    %>% summarise(valor = round( sum(remuneracao_basica_bruta_r ))) %>% arrange(desc(valor)) %>% head(10) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+
+tabela_pensionista_siape %>% group_by(situacao_vinculo)    %>% summarise(valor = round( sum(remuneracao_basica_bruta_r ))) %>% arrange(desc(valor)) %>% head(10) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+
+p <- ggplot(tabela_pensionista_siape %>%  filter(tipo_pensao == "Filho (a) / Menor sob guarda / Enteado (a)" ) %>% group_by(  inicio)    %>% summarise(valor = sum(remuneracao_basica_bruta_r)), aes(x=inicio, y=valor)) +
+    geom_line()    # Use hollow circles
+
+ggplotly(p)
+
+tabela_pensionista_siape %>%  group_by(  cpf_nome)    %>% count() %>% arrange(desc(n)) %>% head(100) %>% kable()
+```

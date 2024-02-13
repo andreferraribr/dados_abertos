@@ -47,15 +47,26 @@ expulsos <- expulsos %>% mutate(ano = year(data_publicacao))
 ```
 
 ```{r}
-expulsos  %>% group_by( categoria_da_sancao, fundamentacao_legal) %>% count()  %>% kable()
+
+expulsos   %>% group_by( categoria_da_sancao) %>% count() %>% arrange(desc(n)) %>% head()  %>% kable()
 ```
 
 ```{r}
-expulsos %>% filter( ! str_detect(fundamentacao_legal, "JUDICIAL"), !str_detect(fundamentacao_legal, "INASSIDUIDADE"), !str_detect(fundamentacao_legal,"ABANDONO")) %>% group_by(fundamentacao_legal) %>% count() %>% arrange(desc(n)) %>% head(20) %>% kable()
-
+expulsos %>% group_by(ano ) %>% count() %>% arrange(desc(ano))  %>% kable()
 ```
 
 ```{r}
+
+expulsos %>% group_by(nome_do_sancionado, cpf_ou_cnpj_do_sancionado) %>% mutate(nome_do_sancionado = str_sub(nome_do_sancionado, end = 10L)) %>% count() %>% arrange(desc(n)) %>% head() %>% kable()
+
+
+orgao <- c("REITORIA","SETOR DE BENEFÍCIOS","FACULDADE DE ENFERMAGEM","SERVIÇO DE GESTÃO ADMINISTRATIVA", "EQUIPE DE ATENDIMENTO AO CONTRIBUINTE","FACULDADE DE ODONTOLOGIA","GABINETE","DELEGACIA 04","OUVIDORIA")
+
+expulsos %>% filter(orgao_de_lotacao %in% orgao)  %>% group_by(  orgao_de_lotacao,orgao_sancionador) %>% count() %>% arrange(desc(n)) %>% head()  %>% kable()
+
+
+
+expulsos %>% group_by(cargo_efetivo) %>% count() %>% arrange(desc(n)) %>% head() %>% kable()
 
 
 
