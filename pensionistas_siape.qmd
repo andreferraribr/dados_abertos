@@ -30,7 +30,13 @@ library(zoo)
 library(stringr)
 library(DT)
 library(stringr)
+
+`%notin%` <- Negate(`%in%`)
 ```
+
+## Tratamento dos dados
+
+### Cadastro
 
 ```{r}
 
@@ -38,21 +44,41 @@ pensionistas_siape_cadastro <- read_delim("servidores/servidores/pos_2020/pensio
     delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
         decimal_mark = ",", grouping_mark = ".", 
         encoding = "Latin1"), trim_ws = TRUE) %>% clean_names()%>% mutate(nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal), cpf_instituidor = paste0(str_sub( cpf_instituidor_pensao,  start = 5L, end = -4L),"-",str_sub( nome_instituidor_pensao,   start = 1L, end = 5L)))
+```
 
+#### Sigiloso
 
+```{r}
+pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11") %>% select(nome, cpf_instituidor_pensao) %>% kable()
+```
+
+#### Sem CPF
+
+```{r}
+pensionistas_siape_cadastro %>% filter(cpf_instituidor != "NA-Sem i")%>% group_by(cpf_instituidor) %>% count() %>% filter(n>9) %>% arrange(desc(n)) %>% head(10)%>% kable()
+```
+
+#### Um instituidor para vários beneficiários
+
+```{r}
+pensionistas_siape_cadastro %>% group_by(cpf_instituidor) %>% count() %>% arrange(desc(n)) %>% head(20) %>% kable()
+
+pensionistas_siape_cadastro %>% group_by(cpf_instituidor) %>% count() %>% filter(n>1) %>% arrange(desc(n)) %>% head(10)%>% kable()
+```
+
+### Remuneração
+
+```{r}
 pensionistas_siape_remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202311_Remuneracao.csv", 
     delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
         decimal_mark = ",", grouping_mark = ".", 
         encoding = "Latin1"), trim_ws = TRUE) %>% clean_names() %>% mutate( nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
-
 ```
 
+### Associar tabelas
+
 ```{r}
-
-pensionistas_siape_cadastro %>% group_by(cpf_instituidor) %>% count() %>% arrange(desc(n)) %>% head(20) %>% kable()
-
-
-
+(nrow(pensionistas_siape_cadastro)-nrow(pensionistas_siape_remuneracao))
 ```
 
 ```{r}
@@ -61,13 +87,17 @@ tabela_pensionista_siape <- left_join(pensionistas_siape_remuneracao %>% select(
 
 
 
-
-
 tabela_pensionista_siape <- tabela_pensionista_siape %>% mutate(inicio = year(parse_date_time(data_inicio_pensao,"dmy")))
 ```
 
+#### 
+
+```{setdiff(pensionistas_siape_cadastro %>% select(nome_id), tabela_pensionista_siape %>% select(nome_id)) %>% kable()}
+
+```
+
 ```{r}
-setdiff(pensionistas_siape_cadastro %>% select(nome_id), tabela_pensionista_siape %>% select(nome_id))
+
 
 
 setdiff( tabela_pensionista_siape %>% select(nome_id),pensionistas_siape_cadastro %>% select(nome_id))
@@ -75,41 +105,22 @@ setdiff( tabela_pensionista_siape %>% select(nome_id),pensionistas_siape_cadastr
 (nrow(pensionistas_siape_cadastro)-nrow(tabela_pensionista_siape))
 
 
-(nrow(pensionistas_siape_cadastro)-nrow(pensionistas_siape_remuneracao))
+
 
 
 
 
 ```
 
-```{r}
-pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11") %>% select(nome, cpf_instituidor_pensao)
-
-pensionistas_siape_cadastro %>% group_by(cpf_instituidor) %>% count() %>% filter(n>1) %>% arrange(desc(n)) %>% head(10)%>% kable()
-
-
-pensionistas_siape_cadastro %>% group_by(cpf_instituidor) %>% count() %>% filter(n>1) %>% arrange(desc(n))  %>%  group_by(n) %>% count()%>% kable()
-
-
-
-pensionistas_siape_cadastro %>% filter(cpf_instituidor != "NA-Sem i")%>% group_by(cpf_instituidor) %>% count() %>% filter(n>9) %>% arrange(desc(n)) %>% head(10)%>% kable()
-```
+#### Vários instituidores para um beneficiário
 
 ```{r}
 tabela_pensionista_siape %>% group_by(nome_id) %>% count() %>% filter(n>1) %>%arrange(desc(n)) %>% head(50) %>%  kable()
 
-`%notin%` <- Negate(`%in%`)
-```
-
-```{r}
-
-
-
-
-
-
 
 ```
+
+## Análise dos dados
 
 ```{r}
 # tabela_pensionista_siape %>% filter( cpf_instituidor == "477.767-CILDO DE ASSIS SILVA")%>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r)) %>% arrange(desc(valor)) %>% head() %>% kable()
