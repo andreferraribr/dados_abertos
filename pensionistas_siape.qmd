@@ -32,6 +32,7 @@ library(DT)
 library(stringr)
 
 `%notin%` <- Negate(`%in%`)
+myNumFmt <- as.fmt(digits=0, big.mark=".")
 ```
 
 ## Tratamento dos dados
@@ -46,15 +47,39 @@ pensionistas_siape_cadastro <- read_delim("servidores/servidores/pos_2020/pensio
         encoding = "Latin1"), trim_ws = TRUE) %>% clean_names()%>% mutate(nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal), cpf_instituidor = paste0(str_sub( cpf_instituidor_pensao,  start = 5L, end = -4L),"-",str_sub( nome_instituidor_pensao,   start = 1L, end = 5L)))
 ```
 
-#### Dados Sigilosos
+#### Atributo nome_id
 
 ```{r}
-pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11") %>% select(nome, cpf_instituidor_pensao) %>% kable()
+pensionistas_siape_cadastro %>% filter(str_detect(nome,"PENSIONISTA")) %>% select(nome, id_servidor_portal) %>% head() %>% kable()
+```
 
-nrow(pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11"))
+```{r}
+pensionistas_siape_cadastro %>% filter(str_detect(nome,"PENSIONISTA")) %>% select(nome, id_servidor_portal, nome_id) %>% head() %>% kable()
+```
+
+```{r}
+pensionistas_siape_cadastro %>% filter(!str_detect(nome,"PENSIONISTA")) %>% select( nome_id) %>% head() %>% kable()
+```
+
+#### Atributo cpf_instituidor
+
+```{r}
+pensionistas_siape_cadastro %>% select(cpf_instituidor) %>% head() %>% kable()
+```
+
+#### Dados Sigilosos
+
+A base retorna `r  Format(nrow(pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11")), fmt = myNumFmt)` registros sigilosos nos quais são ocultados, dentre outros, os nomes dos beneficiários. Quando o registro é sigiloso, são disponibilizados apenas o cpf e o nome do instituidor da pensão.
+
+```{r}
+pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11") %>% select(nome, cpf, matricula, cpf_instituidor_pensao) %>% kable()
+
+
 ```
 
 #### Sem CPF do instituidor da pensão
+
+A base retorna `r  Format(nrow(pensionistas_siape_cadastro %>% filter(cpf_instituidor == "NA-Sem i")), fmt = myNumFmt)` registros sem dados para o nome ou cpf do instituidor da pensão.
 
 ```{r}
 pensionistas_siape_cadastro %>% filter(cpf_instituidor == "NA-Sem i")%>% group_by(nome_id) %>% count()  %>% arrange(desc(n)) %>% head(5)%>% kable()
@@ -66,15 +91,13 @@ pensionistas_siape_cadastro %>% filter(nome_id == "ALAY - 311552361")%>% select(
 
 #### Dados Sigilosos e Sem CPF do instituidor da pensão
 
-```{r}
-nrow( pensionistas_siape_cadastro %>% filter(cpf_instituidor == "NA-Sem i",nome_id == "Sigi - -11" )%>% group_by(nome_id) %>% count())  
-```
+Felizmente há `r nrow( pensionistas_siape_cadastro %>%  filter(cpf_instituidor == "NA-Sem i",nome_id == "Sigi - -11" ))` registros que simultameamente sejam sigilosos e não tenham os dados do instituidor da pensão (CPF e nome).
 
 #### Um instituidor para vários beneficiários
 
 ```{r}
 
-pensionistas_siape_cadastro %>% group_by(cpf_instituidor) %>% count()  %>% arrange(desc(n)) %>% head(10)%>% kable()
+pensionistas_siape_cadastro %>% filter(cpf_instituidor != "NA-Sem i" )%>%  group_by(cpf_instituidor) %>% count()  %>% arrange(desc(n)) %>% head(10)%>% kable()
 ```
 
 ```{r}
@@ -100,17 +123,35 @@ pensionistas_siape_remuneracao %>% filter(startsWith(ano, "(*) Verbas indenizat�
 pensionistas_siape_remuneracao <- pensionistas_siape_remuneracao %>% filter(!startsWith(ano, "(*) Verbas indenizatórias são as parcelas indenizatórias"))
 ```
 
-### Associar tabelas
+### Cuidados antes de associar as tabelas
+
+#### Dados ausentes
+
+`r  Format((nrow(pensionistas_siape_cadastro)-nrow(pensionistas_siape_remuneracao)), fmt = myNumFmt)`
 
 ```{r}
-(nrow(pensionistas_siape_cadastro)-nrow(pensionistas_siape_remuneracao))
+
+
+pensionistas_siape_cadastro %>% filter(nome_id %in% 
+    (setdiff(pensionistas_siape_cadastro %>% select(nome_id),   pensionistas_siape_remuneracao %>% select(nome_id)) )$nome_id) %>%
+  group_by(nome_id) %>% count() %>% adorn_totals() %>% kable()
 ```
+
+![](servidores/servidores/remuneracao.png)
+
+![](servidores/servidores/ausente_01.png)
+
+![](servidores/servidores/ausente_02.png)
+
+#### Dados duplicados
 
 ```{r}
-pensionistas_siape_cadastro %>% group_by(nome_id) %>% count() %>% group_by(n) %>% count() %>% kable(col.names = c("quantidade de benefícios","ocorrências"), format.args = list(big.mark = ".", decimal.mark = ","))
+pensionistas_siape_cadastro %>% filter(nome_id != "Sigi - -11" ) %>% group_by(nome_id) %>% count() %>% group_by(n) %>% count() %>% mutate (repetidos = (n-1)*nn) %>%adorn_totals() %>% kable(col.names = c("quantidade de benefícios","ocorrências", "repeditos"), format.args = list(big.mark = ".", decimal.mark = ","))
 
-pensionistas_siape_remuneracao %>% group_by(nome_id) %>% count() %>% group_by(n) %>% count()  %>% kable(col.names = c("quantidade de benefícios","ocorrências"), format.args = list(big.mark = ".", decimal.mark = ","))
+
 ```
+
+### Resultado da associação das tabelas: "tabela_pensionista_siape"
 
 ```{r}
 tabela_pensionista_siape <- left_join(pensionistas_siape_remuneracao %>% select(ano,mes,id_servidor_portal, nome, cpf, nome_id, remuneracao_apos_deducoes_obrigatorias_r),pensionistas_siape_cadastro )
@@ -123,22 +164,13 @@ tabela_pensionista_siape <- tabela_pensionista_siape %>% mutate(inicio = year(pa
 
 ```
 
-#### 
-
-```{r}
-{setdiff(pensionistas_siape_cadastro %>% select(nome_id), tabela_pensionista_siape %>% select(nome_id)) %>% kable()}
-
-
-
-```
-
 `r  (nrow(pensionistas_siape_cadastro)-nrow(tabela_pensionista_siape))`
 
 ```{r}
 
 
 
-setdiff( tabela_pensionista_siape %>% select(nome_id),pensionistas_siape_cadastro %>% select(nome_id)) %>% kable()
+(nrow( setdiff( tabela_pensionista_siape %>% select(nome_id),pensionistas_siape_cadastro %>% select(nome_id)) ))
 
 
 
@@ -150,15 +182,55 @@ setdiff( tabela_pensionista_siape %>% select(nome_id),pensionistas_siape_cadastr
 
 ```
 
-#### Vários instituidores para um beneficiário
+#### Múltiplos benefícios para um beneficiário
 
 ```{r}
-tabela_pensionista_siape %>% group_by(nome_id) %>% count() %>% filter(n>1) %>%arrange(desc(n)) %>% head(10) %>%  kable()
+multiplos <- (tabela_pensionista_siape%>% group_by(nome_id) %>% count() %>% filter(n>1))
+
+
 
 
 ```
 
-#### Evitar valores duplicados
+##### Três benefícios
+
+```{r}
+
+tabela_pensionista_siape %>% filter( nome_id %in% (multiplos %>% filter(n==3))$nome_id) %>% group_by(nome_id, descricao_cargo_instituidor_pensao) %>% count() %>% kable()
+```
+
+##### Dois benefícios
+
+```{r}
+tabela_pensionista_siape %>% filter(nome_id %in% (multiplos %>% filter(n==2))$nome_id, startsWith(nome,"T")) %>% group_by(nome_id, descricao_cargo_instituidor_pensao) %>% count() %>% tail(11) %>% kable()
+
+
+```
+
+```{r}
+# tabela_pensionista_siape %>% filter(nome_id %in% multiplos$nome_id) %>% group_by(nome_id, descricao_cargo_instituidor_pensao) %>% count() %>% filter(n<2)%>% group_by(descricao_cargo_instituidor_pensao) %>% count()%>% arrange(desc(n)) %>% head(10) %>% kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+# 
+# 
+# tabela_pensionista_siape %>% filter(nome_id %in% multiplos$nome_id) %>% group_by(nome_id, descricao_cargo_instituidor_pensao) %>% count() %>% group_by(descricao_cargo_instituidor_pensao) %>% count()%>% arrange(desc(n)) %>% head(10) %>% kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+# 
+# 
+# 
+#  tabela_pensionista_siape  %>% group_by(nome_id, descricao_cargo_instituidor_pensao) %>% count() %>% group_by(descricao_cargo_instituidor_pensao) %>% count()%>% arrange(desc(n)) %>% head(10) %>% kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+ 
+ 
+ 
+left_join( tabela_pensionista_siape  %>% group_by(nome_id, descricao_cargo_instituidor_pensao) %>% count() %>% group_by(descricao_cargo_instituidor_pensao) %>% count()%>% arrange(desc(n)) %>% head(10),tabela_pensionista_siape %>% filter(nome_id %in% multiplos$nome_id) %>% group_by(nome_id, descricao_cargo_instituidor_pensao) %>% count() %>% group_by(descricao_cargo_instituidor_pensao) %>% count()%>% arrange(desc(n)) , by = ("descricao_cargo_instituidor_pensao"))%>% mutate (percentual = n.y/n.x*100)%>% kable(col.names = c("cargo","total","possíveis duplicações", "percentual de possíveis duplicações"),digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+ 
+
+# tabela_pensionista_siape %>% group_by(descricao_cargo_instituidor_pensao) %>% count() %>% arrange(desc(n)) %>% head(10) %>% kable()
+
+
+```
+
+#### Evitar duplicar valores da remuneração
 
 #### 
 
@@ -166,31 +238,60 @@ tabela_pensionista_siape %>% group_by(nome_id) %>% count() %>% filter(n>1) %>%ar
 tabela_pensionista_siape %>% filter(nome_id %in% c("ALDA - 312278709"))  %>% select(nome_id, cpf_instituidor, remuneracao_apos_deducoes_obrigatorias_r)  %>% kable()
 ```
 
+##### unique()
+
 ```{r}
-tabela_pensionista_siape %>% filter(nome_id %in% c("ALDA - 312278709"))  %>% select(nome_id,  remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% kable()
+tabela_pensionista_siape %>% filter(nome_id %in% c("ALDA - 312278709"))  %>% select(nome_id,  remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% kable( format.args = list(big.mark = ".", decimal.mark = ",")) 
+```
+
+##### max()
+
+```{r}
+tabela_pensionista_siape %>% filter(nome_id %in% c("ALDA - 312278709"))  %>% group_by(nome_id) %>% summarise(valor = sum(max(remuneracao_apos_deducoes_obrigatorias_r)))%>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+##### 
+
+```{r}
+
+# (as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))))-(sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE))
+
+
 ```
 
 ```{r}
 
-(as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))))-(sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE))
+
+# nrow(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r))-  nrow(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique())-nrow(pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11"))
+# 
+# as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor)))
+# 
+# 
+# as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor)))
+# 
+# sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)
+
+valores <- c(
+  
+  as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+  
+ as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+ 
+  as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(max(remuneracao_apos_deducoes_obrigatorias_r), na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+ 
+ sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)
+  
+  )
+
+titulo <- c("pensionistas", "pensionistas_unique" , "pensionistas_max","tabela" )
+
+calculo <- data.frame(titulo,valores)
+
+calculo %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+
+# (as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))))-(sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE))
 
 
-nrow(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r))
-```
-
-```{r}
-
-
-nrow(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r))-  nrow(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique())-nrow(pensionistas_siape_cadastro %>% filter (nome_id == "Sigi - -11"))
-
-as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor)))
-
-sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)
-
-
-(as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))))-(sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE))
-
-sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)
 
 
 
@@ -204,16 +305,19 @@ sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.
 ## Análise dos dados
 
 ```{r}
-# tabela_pensionista_siape %>% filter( cpf_instituidor == "477.767-CILDO DE ASSIS SILVA")%>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r)) %>% arrange(desc(valor)) %>% head() %>% kable()
+
 
 
 
 tabela_pensionista_siape %>%filter(cpf_instituidor != "NA-Sem informação") %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_apos_deducoes_obrigatorias_r))) %>% arrange(desc(valor)) %>% head() %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
+![](servidores/servidores/top_benficio.png)
+
 ```{r}
 
 # tabela_pensionista_siape %>% mutate(ano = year(data_inicio_pensao)) %>% group_by(inicio) %>% summarise(valor = max(remuneracao_apos_deducoes_obrigatorias_r)) %>% arrange(desc(valor)) %>% kable( format.args = list(big.mark = ".", decimal.mark = ","))
+
 
 
 
@@ -319,4 +423,8 @@ ggplotly(p)
 
 ```{r}
 
+```
+
+```{r}
+ (sum(tabela_pensionista_siape$remuneracao_apos_deducoes_obrigatorias_r)-sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r))/sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r)*100
 ```
