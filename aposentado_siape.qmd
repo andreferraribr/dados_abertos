@@ -410,6 +410,8 @@ ggplotly(p)
 
 
 
+
+
 p <- ggplot(tabela_pensionista_siape %>% filter(tempo_setor_publico>1) %>% group_by(id_servidor_portal) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_aposentadoria = round(mean(tempo_aposentadoria, na.rm = TRUE),1), q=n(), proporcao = mean(proporcao, na.rm= TRUE), remuneracao = mean(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% arrange(desc(tempo_aposentadoria)) %>% head(100), aes(y=tempo_aposentadoria, x=remuneracao ,color=id_servidor_portal)) +
     geom_point(  )+
   
@@ -419,6 +421,21 @@ ggplotly(p)
 
 
 p <- ggplot(tabela_pensionista_siape %>% filter(tempo_setor_publico>1) %>% group_by(id_servidor_portal) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_aposentadoria = round(mean(tempo_aposentadoria, na.rm = TRUE),1), q=n(), proporcao = mean(proporcao, na.rm= TRUE), remuneracao = mean(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% arrange(desc(trabalho_medio)) %>% head(100), aes(y=trabalho_medio, x=remuneracao ,color=id_servidor_portal)) +
+    geom_point(  )+
+  
+   theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank() )
+ggplotly(p)
+
+
+p <- ggplot(tabela_pensionista_siape %>% filter(tempo_setor_publico>1) %>% group_by(id_servidor_portal) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_aposentadoria = round(mean(tempo_aposentadoria, na.rm = TRUE),1), q=n(), proporcao = mean(proporcao, na.rm= TRUE), remuneracao = mean(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% arrange(desc(tempo_aposentadoria)) %>% tail(100), aes(y=tempo_aposentadoria, x=remuneracao ,color=id_servidor_portal)) +
+    geom_point(  )+
+  
+   theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+        axis.ticks.y=element_blank() )
+ggplotly(p)
+
+
+p <- ggplot(tabela_pensionista_siape %>% filter(tempo_setor_publico>1) %>% group_by(id_servidor_portal) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_aposentadoria = round(mean(tempo_aposentadoria, na.rm = TRUE),1), q=n(), proporcao = mean(proporcao, na.rm= TRUE), remuneracao = mean(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% arrange(desc(trabalho_medio)) %>% tail(100), aes(y=trabalho_medio, x=remuneracao ,color=id_servidor_portal)) +
     geom_point(  )+
   
    theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank() )

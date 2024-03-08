@@ -1,0 +1,555 @@
+---
+title: "Pensionistas Siape"
+editor: visual
+lang: "pt"
+format:
+  # docx: default
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| warning: false
+#| message: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(deflateBR)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(DT)
+library(stringr)
+library(scales)
+library(ggthemes)
+
+`%notin%` <- Negate(`%in%`)
+myNumFmt <- as.fmt(digits=0, big.mark=".")
+options(scipen = 999)
+```
+
+## Introdução
+
+Os dados sobre os pensionistas estão em duas bases distintas: cadastro e remuneração. A tabela cadastro foca nos dados do instituidor da pensão (cpf, cargo, tipo da pensão, data de início da pensão...), enquanto a tabela remuneração traz detalhes sobre os valores dos benefícios.
+
+Uma vez que ambas as tabelas contém os dados do beneficiários da pensão, nós vinculamos as duas tabelas a partir destes dados. Tomanos cuidados especiais com dados ausentes e duplicados.
+
+Após associar as tabelas foi possível analisar os pagamentos das pensões, por exemplo, por início do ano da pensão, pelo cargo do instituidor da pensão e pelo tipo da pensão.
+
+## Tratamento dos dados
+
+### Tabela Cadastro
+
+```{r}
+
+servidores_siape_cadastro <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Cadastro_servidor.csv", 
+    delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        decimal_mark = ",", grouping_mark = ".", 
+        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names()%>% mutate(nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
+
+servidores_siape_cadastro <- servidores_siape_cadastro%>% select(-matricula, -cod_uorg_lotacao ,-uorg_lotacao , -data_nomeacao_cargofuncao,-documento_ingresso_servicopublico,-diploma_ingresso_cargofuncao ,-diploma_ingresso_orgao ,-diploma_ingresso_servicopublico,-cod_tipo_vinculo,-tipo_vinculo,-cod_orgsup_lotacao,-orgsup_lotacao, -org_lotacao, -cod_org_lotacao )
+```
+
+### Tabela Remuneração
+
+```{r}
+servidores_siape_remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Remuneracao_servidor.csv", 
+    delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        decimal_mark = ",", grouping_mark = ".", 
+        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names() %>% mutate( nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
+
+
+servidores_siape_remuneracao <- servidores_siape_remuneracao%>% select(ano,mes,id_servidor_portal, nome, cpf, nome_id, remuneracao_apos_deducoes_obrigatorias_r)
+
+servidores_siape_remuneracao <- servidores_siape_remuneracao %>% filter(!startsWith(ano, "(*) Verbas indenizatórias são as parcelas indenizatórias"))
+```
+
+### Cuidados antes de associar as tabelas
+
+#### Dados ausentes
+
+```{r}
+nao_inclusos <- (setdiff(servidores_siape_cadastro %>% select(nome_id),   servidores_siape_remuneracao %>% select(nome_id)) )
+
+
+```
+
+```{r}
+# servidores_siape_cadastro %>% filter(nome_id %in% nao_inclusos$nome_id, nome== "Sigiloso")  %>% group_by(situacao_vinculo) %>% count() %>% arrange(desc(n)) %>% head()  %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-beneficiario_ausente_base_remuneracao
+#| tbl-cap: Beneficiários ausentes na base de dados da remuneração
+
+servidores_siape_cadastro %>% filter(nome_id %in% nao_inclusos$nome_id, nome!= "Sigiloso")  %>% group_by(situacao_vinculo) %>% count() %>% arrange(desc(n)) %>% adorn_totals()  %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+
+```
+
+```{r}
+
+
+
+
+
+
+
+
+```
+
+#### Dados duplicados {#sec-dados_duplicados}
+
+```{r}
+servidores_siape_cadastro %>% filter(nome_id %notin% nao_inclusos$nome_id) %>% filter(nome != "Sigiloso") %>% group_by(nome_id) %>% count()  %>% group_by(n) %>% count()%>% mutate (repetidos = (n-1)*nn) %>% adorn_totals(where = c("row","col"))  %>%  kable(col.names = c("Quantidade de Vínculos", "ocorrências", "vínculos repeditos","Total de vínculos"),format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+### Batimento das bases de dados cadastro e remuneração
+
+```{r}
+vinculos <- c(
+  
+ as.numeric(nrow(servidores_siape_cadastro)),
+  
+ as.numeric(nrow(servidores_siape_remuneracao)),
+  as.numeric(nrow(servidores_siape_cadastro))-as.numeric(nrow(servidores_siape_remuneracao))
+ 
+  
+  )
+
+origem <- c("cadastro", "remuneração" , "diferença de registros" )
+
+diferenca <- data.frame(origem,vinculos)
+
+diferenca  %>% kable(col.names = c("base de dados", "quantidade na quantidade de registros"), format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+vinculos <- c(
+  
+  as.numeric(nrow(servidores_siape_cadastro))-as.numeric(nrow(servidores_siape_remuneracao)),
+  
+ as.numeric(nrow(servidores_siape_cadastro %>% filter(nome_id %in% nao_inclusos$nome_id))*-1),
+ as.numeric( sum((servidores_siape_cadastro%>% filter(nome_id %notin% nao_inclusos$nome_id) %>% group_by(nome_id) %>% count() %>% group_by(n) %>% count() %>% mutate (repetidos = (n-1)*nn))$repetidos)*-1)
+ 
+  
+  )
+
+origem <- c("diferença entre a base cadastro e a base remuneração", "registors ausentes na base remuneração" , "registros duplicados na base cadastro" )
+
+diferenca <- data.frame(origem,vinculos)
+
+diferenca %>% adorn_totals()  %>% kable(col.names = c("base de dados", "quantidade na quantidade de registros"), format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+### Resultado da associação das tabelas: "tabela_servidores_siape"
+
+```{r}
+tabela_servidores_siape <- left_join(servidores_siape_remuneracao ,servidores_siape_cadastro  )
+
+
+
+
+tabela_servidores_siape <- tabela_servidores_siape %>% mutate( data_ingresso_cargofuncao= parse_date_time(data_ingresso_cargofuncao,"dmy") , data_diploma_ingresso_servicopublico= parse_date_time(data_diploma_ingresso_servicopublico,"dmy"), data_ingresso_orgao = parse_date_time(data_ingresso_orgao,"dmy"),inicio_cargo = year(data_ingresso_cargofuncao), inicio_servico_publico = year(data_diploma_ingresso_servicopublico), inicio_orgao = year(data_ingresso_orgao) )
+
+tabela_servidores_siape <- tabela_servidores_siape %>% mutate(tempo_setor_publico= time_length(difftime(today() ,data_diploma_ingresso_servicopublico ), "years"), tempo_cargo= time_length(difftime(today() ,data_ingresso_cargofuncao ), "years"))
+
+
+tabela_servidores_siape %>% filter(regime_juridico =="REGIME JURIDICO UNICO") %>% group_by(descricao_cargo) %>% summarise(trabalho_medio = mean(tempo_setor_publico,na.rm = TRUE) )%>% arrange(desc(trabalho_medio))%>% head(10) %>% kable()
+
+tabela_servidores_siape  %>% group_by(descricao_cargo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_cargo = round(mean(tempo_cargo, na.rm = TRUE),1), q=n()) %>% filter(q>100) %>% arrange((tempo_cargo))%>% head(20) %>% kable()
+
+tabela_servidores_siape %>% filter(nivel_funcao != "-1", org_exercicio == "Universidade Federal de Santa Maria - RS") %>% group_by( funcao, nivel_funcao) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_cargo = round(mean(tempo_cargo, na.rm = TRUE),1), q=n(), remuneracao = mean(max(remuneracao_apos_deducoes_obrigatorias_r))) %>% filter(q>100) %>% arrange(desc(q))%>% head(20) %>% kable()
+
+
+
+tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n()) %>% filter(q>100) %>% arrange(desc(trabalho_medio)) %>% kable()
+
+# tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n()) %>% filter(q>100) %>% arrange(desc(trabalho_medio))%>% head(20) %>% kable()
+
+tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n()) %>% filter(q>100) %>% arrange((trabalho_medio))%>% head(20) %>% kable()
+
+
+tabela_servidores_siape %>% filter(tempo_setor_publico>1,descricao_cargo ==  "SOLDADO SEGUNDA CLASSE") %>% head(10) %>% kable()
+```
+
+```         
+```
+
+```         
+```
+
+##### 
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-max_valores_duplicados
+#| tbl-cap: max() para evitar valores duplicados
+tabela_servidores_siape %>% filter(nome_id %in% c("ALDA - 312278709"))  %>% group_by(nome_id) %>% summarise(valor = sum(max(remuneracao_apos_deducoes_obrigatorias_r)))%>% kable(col.names = c("nome_id", "remuneração (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+##### Comparando valores
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-df_valores_duplicados
+#| tbl-cap: Comparando valores
+
+
+valores <- c(
+  
+  as.numeric(tabela_servidores_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+  
+ as.numeric(tabela_servidores_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+ 
+  as.numeric(tabela_servidores_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(max(remuneracao_apos_deducoes_obrigatorias_r), na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+ 
+ sum(servidores_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)
+  
+  )
+
+fonte <- c("tabela servidores", "servidores_unique" , "servidores_max","tabela remuneração" )
+
+calculo <- data.frame(fonte,valores)
+
+calculo %>% kable( col.names = c("fonte", "valor (R$)"),format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+## Análise dos dados
+
+### Maiores benefícios
+
+```{r}
+
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-maiores_remuneracoes
+#| tbl-cap: Maiores remunerações no mês
+
+
+tabela_servidores_siape  %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_apos_deducoes_obrigatorias_r))) %>% arrange(desc(valor)) %>% head() %>% kable(col.names = c("benficiário", "valor (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
+id_maior <-  as.character( tabela_servidores_siape  %>% group_by(  id_servidor_portal) %>% summarise(valor = max((remuneracao_apos_deducoes_obrigatorias_r))) %>% arrange(desc(valor)) %>% head(1) %>% select(id_servidor_portal))
+
+maior <- str_remove( paste("https://portaldatransparencia.gov.br/servidores/",id_maior)," ")
+
+
+```
+
+![Portal da Transparência: maiores remunerações](servidores/servidores/top_benficio.png){#fig-top_remuneracao}
+
+`r  (maior)`
+
+### Valores e quantidade de beneficiários
+
+```{r}
+df_plot <- (tabela_servidores_siape %>%  group_by(nome_id, inicio_cargo) %>% summarise(valor = max(remuneracao_apos_deducoes_obrigatorias_r), n=n()) %>% group_by(inicio_cargo) %>% summarise(valor = sum(valor), n =sum(n)) %>% mutate(valor_acumulado= cumsum(valor), quantitativo_acumulado = cumsum(n)))
+```
+
+```{r}
+#https://bookdown.dongzhuoer.com/hadley/ggplot2-book/custom-annotations
+
+
+
+
+# df_plot_2 <- (tabela_servidores_siape  %>%  group_by(nome_id, data_diploma_ingresso_servicopublico) %>% summarise(valor = max(remuneracao_apos_deducoes_obrigatorias_r), n=n()) %>% group_by(data_diploma_ingresso_servicopublico) %>% summarise(valor = sum(valor), n =sum(n)) %>% mutate(valor_acumulado= cumsum(valor), quantitativo_acumulado = cumsum(n)))%>% drop_na()  
+
+
+df_plot_3 <- tabela_servidores_siape %>% mutate(ano = floor_date(data_diploma_ingresso_servicopublico, "year")) %>% mutate(cargo = case_when(str_detect(descricao_cargo,"PROFE")~ "Professor", str_detect(descricao_cargo,"AUDITOR")~ "Auditor",.default = "outros" )) %>% group_by(ano, cargo)  %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r), n=n()) %>% mutate (etiqueta = paste0(year(ano),": ", Format(n, fmt = myNumFmt)," ingressos"))%>% drop_na()  
+
+
+
+presidentes <- read_excel("presidentes.xlsx", 
+                          col_types = c("text","date", "date", "date", "text", "text"))  %>% mutate(cor = fct_reorder(cor, party))
+
+# p <- ggplot(df_plot_3 %>% filter(ano>"1978-12-31")) + 
+#   geom_rect(
+#     aes(xmin = start , xmax = end , fill = fct_reorder(party,cor)), 
+#     ymin =0, ymax = 50000, alpha = 0.3, 
+#     data = presidentes
+#   )+
+#    scale_fill_manual(values = c("black","yellow","green","darkgrey","blue","red")  ) + 
+#   geom_vline(
+#     aes(xintercept = as.numeric(start)), 
+#     data = presidentes,
+#     colour = "grey50", alpha =0.5
+#   ) + 
+#   geom_text(
+#     aes(x = texto, y = 45000, label = name), 
+#     data = presidentes, 
+#     size = 2
+#   ) + 
+#    geom_col(aes(ano %m+% months (6),  n, label= etiqueta)) +
+#   xlab("date") + 
+#   ylab("unemployment")+
+#   theme_void()+ theme(legend.position="none")
+# ggplotly(p)
+
+df_plot_4 <- tabela_servidores_siape %>% mutate(ano = floor_date(data_diploma_ingresso_servicopublico, "year")) %>% mutate(cargo = case_when(str_detect(descricao_cargo,"PROFE")~ "Professor", str_detect(descricao_cargo,"MEDIC")~ "Médico", str_detect(descricao_cargo,"AUDITOR")~ "Auditor",.default = "outros" )) %>% group_by(ano, cargo)  %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r), n=n()) %>% mutate (etiqueta = paste0(year(ano),": ", Format(n, fmt = myNumFmt)," ingressos"))%>% drop_na()  %>% filter(cargo == "Médico")
+
+
+p <- ggplot(df_plot_4) + 
+  geom_rect(
+    aes(xmin = start , xmax = end , fill = cor), 
+    ymin =0, ymax = max (df_plot_4$n)*1.2, alpha = 0.2, 
+    data = presidentes
+  )+
+   scale_fill_manual(values = levels(presidentes$cor)) + 
+  geom_vline(
+    aes(xintercept = as.numeric(start)), 
+    data = presidentes,
+    colour = "grey50", alpha =0.5
+  ) + 
+  geom_text(
+    aes(x = texto, y = max (df_plot_4$n)*1.1, label = name), 
+    data = presidentes, 
+    size = 1.5
+  ) + 
+   geom_col(aes(ano %m+% months (6),  n, label= paste0( etiqueta, " ", cargo))) +
+  xlab("date") + 
+  ylab("unemployment")+
+  theme_void()+ theme(legend.position="none")
+ggplotly(p)
+
+```
+
+### Benefício recebido por ano de início da pensão (valor acumulado)
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-beneficio_ano_inclusao_acumulado
+#| fig-cap: Benefício recebido por ano de início da pensão (valor acumulado em R$)
+
+p <- ggplot(df_plot, aes(x=inicio_cargo, y=valor_acumulado, label= Format(valor_acumulado, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p)  
+```
+
+### Benefício recebido por ano de início da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-beneficio_ano_inclusao
+#| fig-cap: Benefício recebido por ano de início da pensão (valor em R$)
+p <- ggplot(df_plot, aes(x=inicio_cargo, y=valor, label= Format(valor, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p)  
+```
+
+### Quantitativo de pensionistas por ano de início da pensão (acumulado)
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-pensionista_ano_inclusao_acumulado
+#| fig-cap: Quantitativo de pensionistas por ano de início da pensão (acumulado)
+p <- ggplot(df_plot, aes(x=inicio_cargo, y=quantitativo_acumulado, label= Format(quantitativo_acumulado, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p) 
+```
+
+### Quantitativo de pensionistas por ano de início da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-pensionista_ano_inclusao
+#| fig-cap: Quantitativo de pensionistas por ano de início da pensão
+
+ 
+```
+
+```{r}
+
+
+
+
+
+
+
+
+
+p <- ggplot(tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(descricao_cargo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n()) %>% filter(q>100), aes(y=fct_reorder( descricao_cargo, trabalho_medio), x=trabalho_medio )) +
+    geom_col(  )+
+  scale_color_continuous() +
+   theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+        axis.ticks.y=element_blank() )
+ggplotly(p)
+
+# 
+# p <- ggplot(tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(descricao_cargo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n(), proporcao = mean(proporcao, na.rm= TRUE)) %>% filter(q>100), aes(y=fct_reorder( descricao_cargo, trabalho_medio), x=trabalho_medio )) +
+#     geom_col(  )+
+#   scale_color_continuous() +
+#    theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+#         axis.ticks.y=element_blank() )
+# ggplotly(p)
+
+
+
+# p <- ggplot(tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(descricao_cargo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n(), proporcao = mean(proporcao, na.rm= TRUE), remuneracao = mean(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% filter(q>100), aes(y=trabalho_medio, x=remuneracao ,color=descricao_cargo)) +
+#     geom_point(  )+
+#   
+#    theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+#         axis.ticks.y=element_blank() )
+# ggplotly(p)
+
+
+p <- ggplot(tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(descricao_cargo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n(), remuneracao = mean(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% filter(q>100), aes(y=trabalho_medio, x=remuneracao ,color=descricao_cargo)) +
+    geom_point(  )+
+  
+   theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+        axis.ticks.y=element_blank() )
+ggplotly(p)
+
+
+
+
+
+
+p <- ggplot(tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(id_servidor_portal) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1),  q=n(), remuneracao = mean(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% arrange(desc(trabalho_medio)) %>% head(100), aes(y=trabalho_medio, x=remuneracao ,color=id_servidor_portal)) +
+    geom_point(  )+
+  
+   theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+        axis.ticks.y=element_blank() )
+ggplotly(p)
+
+
+
+
+
+
+```
+
+```{r}
+
+```
+
+### Quantitativo de pensionistas, por tipo e por ano de início da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-pensionista_tipo_ano
+#| fig-cap: Quantitativo de pensionistas, por tipo e por ano de início da pensão
+
+p <- ggplot(tabela_servidores_siape %>%   group_by(  inicio_cargo, situacao_vinculo)    %>% count(), aes(x=inicio_cargo, y=n,colour=situacao_vinculo ,label= Format(n, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p)
+```
+
+### Maiores valores por cargo do instituidor da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-maiores_valores_por_cargo
+#| tbl-cap: Maiores valores por cargo do instituidor da pensão
+tabela_servidores_siape %>% group_by(descricao_cargo )    %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r)) %>% arrange(desc(valor)) %>% head(10)%>% kable(col.names = c("descricao_cargo","Valor total dos benefícios pagos aos dependentes (R$)"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+
+
+
+
+```
+
+### Maiores valores médios por cargo do instituidor da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-maiores_valores_medios_por_cargo
+#| tbl-cap: Maiores valores médios por cargo do instituidor da pensão (R$)
+tabela_servidores_siape %>% group_by( descricao_cargo)    %>% summarise(valor = mean(remuneracao_apos_deducoes_obrigatorias_r)) %>% arrange(desc(valor)) %>% head(10) %>% kable( col.names = c("descricao_cargo","Valor médio do benefício a ser dividido entre os beneficiários (R$)"),digits = 0,format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+### Menores valores médios por cargo do instituidor da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-menores_valores_medios_por_cargo
+#| tbl-cap: Menores valores médios por cargo do instituidor da pensão (R$)
+tabela_servidores_siape %>% group_by( descricao_cargo)    %>% summarise(valor = mean(remuneracao_apos_deducoes_obrigatorias_r)) %>% arrange(desc(valor)) %>% tail(10) %>% kable(col.names = c("Cargo do instituidor da pensão","Valor médio do benefício a ser dividido entre os beneficiários (R$)"), digits = 0,format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+## Considerações finais
+
+Pesquisas futuras podem investigar:
+
+1.  os motivos para os picos ocorridos em 1980 e 2004 na concessão de benefícios para filhos. @fig-pensionista_tipo_pensao
+
+2.  os motivos para dois beneficiários constarem na tabela cadastro, mas estarem ausentes na tabela remuneração. @tbl-beneficiario_ausente_base_remuneracao
+
+3.  qual é a defasagem temporal entre a solicitação e a concessão do benefício previdenciário.
+
+4.  os motivos dos dados sigilosos na tabele cadastro
+
+Seria interessante se a base de dados disponibilizasse:
+
+1.  Data nascimento e óbito do instituidor da pensão
+
+2.  Data de nascimento do beneficiário da pensão
+
+```{r}
+diferentes <- setdiff(servidores_siape_cadastro %>% select(id_servidor_portal), servidores_siape_remuneracao %>% select(id_servidor_portal))
+
+servidores_siape_cadastro %>% filter(id_servidor_portal %in% diferentes$id_servidor_portal) %>% group_by( situacao_vinculo) %>% count() %>%arrange(desc(n)) %>%  kable()
+```
+
+```{r}
+p <- ggplot(tabela_servidores_siape %>% filter(tempo_setor_publico>1) %>% group_by(inicio_servico_publico) %>% summarise(remuneracao = round(sum(remuneracao_apos_deducoes_obrigatorias_r),1)) , aes(x= inicio_servico_publico,  y=remuneracao )) +
+    geom_col(  ) +
+   theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+        axis.ticks.y=element_blank() )+coord_flip()
+ggplotly(p)
+```
