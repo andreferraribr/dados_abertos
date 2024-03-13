@@ -53,7 +53,7 @@ Após associar as tabelas foi possível analisar os pagamentos das pensões, por
 
 ```{r}
 
-pensionistas_siape_cadastro <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Cadastro_aposentado.csv", 
+pensionistas_siape_cadastro <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Cadastro.csv", 
     delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
         decimal_mark = ",", grouping_mark = ".", 
         encoding = "Latin1"), trim_ws = TRUE) %>% clean_names()%>% mutate(nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal), cpf_instituidor = paste0(str_sub( cpf_instituidor_pensao,  start = 5L, end = -4L),"-",str_sub( nome_instituidor_pensao,   start = 1L, end = 5L)))
@@ -151,7 +151,7 @@ pensionistas_siape_cadastro %>% filter(cpf_instituidor == "686.107-JOSE ") %>% s
 ### Tabela Remuneração
 
 ```{r}
-pensionistas_siape_remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Remuneracao_aposentado.csv", 
+pensionistas_siape_remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Remuneracao.csv", 
     delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
         decimal_mark = ",", grouping_mark = ".", 
         encoding = "Latin1"), trim_ws = TRUE) %>% clean_names() %>% mutate( nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
