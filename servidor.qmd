@@ -36,6 +36,11 @@ library(ggthemes)
 `%notin%` <- Negate(`%in%`)
 myNumFmt <- as.fmt(digits=0, big.mark=".")
 options(scipen = 999)
+
+options(DT.options = list(pageLength = 10, language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese.json')))
+# https://rstudio.github.io/DT/004-i18n.html
+# https://rstudio.github.io/DT/options.html
+# %>% formatCurrency(c('A', 'C')) %>% formatPercentage('D', 2)%>% formatRound('E', 3)
 ```
 
 ## Introdução
@@ -58,12 +63,31 @@ cadastro <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401
 cadastro <- cadastro%>% select(-matricula, -cod_uorg_lotacao ,-uorg_lotacao , -data_nomeacao_cargofuncao,-documento_ingresso_servicopublico,-diploma_ingresso_cargofuncao ,-diploma_ingresso_orgao ,-diploma_ingresso_servicopublico,-cod_tipo_vinculo,-tipo_vinculo,-cod_orgsup_lotacao,-orgsup_lotacao, -org_lotacao, -cod_org_lotacao )
 
 
-cadastro <- cadastro%>% mutate( data_ingresso_cargofuncao= parse_date_time(data_ingresso_cargofuncao,"dmy") , data_diploma_ingresso_servicopublico= parse_date_time(data_diploma_ingresso_servicopublico,"dmy"), data_ingresso_orgao = parse_date_time(data_ingresso_orgao,"dmy"),inicio_cargo = year(data_ingresso_cargofuncao), inicio_servico_publico = year(data_diploma_ingresso_servicopublico), inicio_orgao = year(data_ingresso_orgao),tempo_setor_publico= time_length(difftime(today() ,data_diploma_ingresso_servicopublico ), "years"), tempo_cargo= time_length(difftime(today() ,data_ingresso_cargofuncao ), "years") )
+```
 
+#### Variáveis temporais
 
-# https://statisticsglobe.com/extract-first-last-word-character-string-r
-# cadastro <- cadastro %>%  mutate(descricao_01 = str_remove_all(descricao_cargo, "ASG - "), descricao_01 =str_replace (  descricao_01, "-", " "), descricao_01 = str_remove_all(descricao_cargo, "ASM-"), descricao_01 = str_remove_all(descricao_cargo, "ATA "), descricao_01 = str_remove_all(descricao_cargo, "ASO-"), descricao_01 = str_remove_all(descricao_cargo, "ASA-") ,cargo_termo =word ( descricao_01 ,1))
-# descricao_01 =str_replace (  descricao_01, "-", " ")
+A tabela cadastro é rica em atributos relacionados a datas. Para facilitar a análise dos dados, nos criamos, dentre outos, um atributo identificar quanto tempo o servidor está no serviço público. Para tanto calculamos a diferença entre a data do ingresso do servidor no serviço público e a data da base de dados (31/jan/2024).
+
+```{r cadastro_datas}
+
+cadastro <- cadastro%>% mutate( data_ingresso_cargofuncao= parse_date_time(data_ingresso_cargofuncao,"dmy") , data_diploma_ingresso_servicopublico= parse_date_time(data_diploma_ingresso_servicopublico,"dmy"), data_ingresso_orgao = parse_date_time(data_ingresso_orgao,"dmy"),inicio_cargo = year(data_ingresso_cargofuncao), inicio_servico_publico = year(data_diploma_ingresso_servicopublico), inicio_orgao = year(data_ingresso_orgao),tempo_servico_publico= time_length(difftime("2024-01-31" ,data_diploma_ingresso_servicopublico ), "years"), tempo_cargo= time_length(difftime("2024-01-31" ,data_ingresso_cargofuncao ), "years") )
+```
+
+#### Atributo "cargo"
+
+Criamos o atributo "cargo" para tentar consolidar todos os cargos registrados no atributo "descricao_cargo". Tentei agrupar por semelhança, mas não posso garantir a exatidão ou coerência da consolidação.
+
+Alguns agrupamentos foram tranquilos, outros foram "chutes". Quando o cargo aparecia tanto no masculino quanto no feminino, optei pela descrição no masculino (recreadora x recreador). Em algumas situações, por falta de inspiração/conhecimento, deixei o cargo como descrito na base de dados (ex: CUX DE MANUTENCAO E SERV OPERACIONAIS)
+
+A @tbl-cargo_x_cargo_descricao traz o resultado da consolidação, uma redução de quase 2.000 na quantidade de cargos distintos.
+
+```{r cadastro_cargos}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-cargo_x_cargo_descricao
+#| tbl-cap: Consolidação dos cargos
 
 cadastro <- cadastro %>%  mutate(descricao_01 = case_when(
 startsWith(descricao_cargo, "ASG - ") ~ str_remove_all(descricao_cargo, "ASG - "),
@@ -122,79 +146,65 @@ cadastro <- cadastro %>% mutate(cargo = case_when(
   startsWith(descricao_cargo, "ESPEC ")~ "ESPECIALISTA",
   startsWith(descricao_01, "PRIMEIRO")~ descricao_01,
   startsWith(descricao_01, "SEGUNDO")~ descricao_01,
-   startsWith(descricao_01, "MINISTRO")~ descricao_cargo,
-  
+  startsWith(descricao_01, "MINISTRO")~ descricao_cargo,
   startsWith(descricao_cargo, "OP ")~ "OPERADOR",
   startsWith(descricao_cargo, "ARTIF")~ "ARTIFICE",
-   startsWith(descricao_cargo, "AUD FEDERAL")~ "AUDITOR",
-    startsWith(descricao_cargo, "CUX")~ descricao_01,
-    startsWith(descricao_01, "ASSIT")~ "ASSISTENTE",
+  startsWith(descricao_cargo, "AUD FEDERAL")~ "AUDITOR",
+  startsWith(descricao_cargo, "CUX")~ descricao_01,
+  startsWith(descricao_01, "ASSIT")~ "ASSISTENTE",
   startsWith(descricao_cargo, "ATO -")~ "ASSISTENTE",
   startsWith(descricao_cargo, "CALDEREIRO")~ "CALDEIREIRO",
   startsWith(descricao_cargo, "CENOTECNICA")~ "CENOTECNICO",
-   startsWith(descricao_cargo, "CINEGRAFIA")~ "CINEGRAFISTA",
-   startsWith(descricao_cargo, "CONTRA REGRA")~ "CONTRA REGRA",
-   startsWith(descricao_cargo, "CONTRA MESTRE")~ "CONTRA MESTRE",
-   startsWith(descricao_cargo, "COMPRADORA")~ "COMPRADOR",
+  startsWith(descricao_cargo, "CINEGRAFIA")~ "CINEGRAFISTA",
+  startsWith(descricao_cargo, "CONTRA REGRA")~ "CONTRA REGRA",
+  startsWith(descricao_cargo, "CONTRA MESTRE")~ "CONTRA MESTRE",
+  startsWith(descricao_cargo, "COMPRADORA")~ "COMPRADOR",
   startsWith(descricao_cargo, "PEDAGOGA")~ "PEDAGOGO",
-    startsWith(descricao_cargo, "RECREADORA")~ "RECREADOR",
-     startsWith(descricao_cargo, "PROD EXEC TV - RADIO E MIDIAS DIGITAIS")~ "PRODUTOR EXEC TV - RADIO E MIDIAS DIGITAIS",
+  startsWith(descricao_cargo, "RECREADORA")~ "RECREADOR",
+   startsWith(descricao_cargo, "PROD EXEC TV - RADIO E MIDIAS DIGITAIS")~ "PRODUTOR EXEC TV - RADIO E MIDIAS DIGITAIS",
   startsWith(descricao_cargo, "CONDUCAO")~ "MOTORISTA",
-   startsWith(descricao_cargo, "PROFIS TEC ESPEC LINGUAGEM SINAIS")~ "ESPECIALISTA LINGUAGEM SINAIS",
-   startsWith(descricao_cargo, "COORDEN")~ "COORDENADOR",
-   startsWith(descricao_cargo, "PROFIS DE NIVEL OPERACIONAL")~ "APOIO",
-   startsWith(descricao_cargo, "PROFIS DE EDUCACAO FISICA")~ "PROFISSIONAL DE EDUCACAO FISICA",
-   startsWith(descricao_cargo, "OF ARTES GRAFICAS")~ "OF ARTES GRAFICAS",
-   startsWith(descricao_cargo, "OF MANUTENCAO")~ "OF MANUTENCAO",
+  startsWith(descricao_cargo, "PROFIS TEC ESPEC LINGUAGEM SINAIS")~ "ESPECIALISTA LINGUAGEM SINAIS",
+  startsWith(descricao_cargo, "COORDEN")~ "COORDENADOR",
+  startsWith(descricao_cargo, "PROFIS DE NIVEL OPERACIONAL")~ "APOIO",
+  startsWith(descricao_cargo, "PROFIS DE EDUCACAO FISICA")~ "PROFISSIONAL DE EDUCACAO FISICA",
+  startsWith(descricao_cargo, "OF ARTES GRAFICAS")~ "OF ARTES GRAFICAS",
+  startsWith(descricao_cargo, "OF MANUTENCAO")~ "OF MANUTENCAO",
   startsWith(descricao_cargo, "COZINHEIRA")~ "COZINHEIRO",
   startsWith(descricao_cargo, "TERCEIRO")~ descricao_cargo,
   startsWith(descricao_01, "CONTRA REGRA")~ "CONTRA-REGRA",
   startsWith(descricao_cargo, "CONTRAMESTRE")~ "CONTRA-MESTRE",
   startsWith(descricao_cargo, "ECONOMO")~ "ECONOMISTA",
-   startsWith(descricao_cargo, "T P ECONOMIA III")~ "ECONOMISTA",
+  startsWith(descricao_cargo, "T P ECONOMIA III")~ "ECONOMISTA",
   startsWith(descricao_cargo, "PROG APLICACOES III")~ "PROGRAMADOR",
   startsWith(descricao_cargo, "T ASS ADM")~ "TECNICO",
   startsWith(descricao_cargo, "OPER ESPECIALIZADO")~ "OPERADOR",
   startsWith(descricao_cargo, "MEDICO VETERINARIO")~ descricao_cargo,
   startsWith(descricao_cargo, "PROGAMADOR")~ "PROGRAMADOR",
   startsWith(descricao_cargo, "ESTATISTICA")~ "ESTATISTICO",
-  startsWith(descricao_cargo, "PROF SERV OPERACIONAIS")~ "SERVICOS OPERACIONAIS IV",
+  startsWith(descricao_cargo, "PROF SERV OPERACIONAIS")~"SERVICOS OPERACIONAIS IV",
   startsWith(descricao_cargo, "CARGO EM EXTINCAO")~ "CARGO EM EXTINCAO",
   startsWith(descricao_cargo, "SALVA-VIDAS")~ "SALVA-VIDAS",
-   startsWith(descricao_cargo, "FISC")~ "FISCAL",
+  startsWith(descricao_cargo, "FISC")~ "FISCAL",
   startsWith(descricao_cargo, "VICE-PRESIDENTE DA REPUBLICA")~ "VICE-PRESIDENTE DA REPUBLICA",
-    startsWith(descricao_cargo, "PRESIDENTE DA REPUBLICA")~ "PRESIDENTE DA REPUBLICA",
+  startsWith(descricao_cargo, "PRESIDENTE DA REPUBLICA")~"PRESIDENTE DA REPUBLICA",
   startsWith(descricao_cargo, "JORNALISMO")~ "JORNALISTA",
   startsWith(descricao_cargo, "VISITADOR SANITARIO")~ "VISITADOR SANITARIO",
   startsWith(descricao_cargo, "MAQ AUXLIAR ")~ "AUXILIAR",
-   startsWith(descricao_cargo, "INSP")~ "INSPETOR",
-   startsWith(descricao_cargo, "MOCO DE MAQUINAS")~ "MOÇO DE MAQUINAS",
+  startsWith(descricao_cargo, "INSP")~ "INSPETOR",
+  startsWith(descricao_cargo, "MOCO DE MAQUINAS")~ "MOÇO DE MAQUINAS",
   startsWith(descricao_cargo, "ASO-ASSI")~ "ASSISTENTE",
   startsWith(descricao_cargo, "ENGENHARIA DE SOFTWARE")~ "ENGENHEIRO",
   str_detect(descricao_cargo, "ADMINISTRADOR") | startsWith(descricao_cargo, "ADMINISTRACAO " )~ "ADMINISTRADOR",
   descricao_cargo %in% c("MDT-MEDICO","MEDICO-AREA","MDT-MEDICO DO TRABALHO") ~ "MEDICO",
-  .default = cargo_termo
-))
+  .default = cargo_termo))
 
 
+tabela_cargos <- data.frame(atributo = c("cargo","cargo_descricao"),
+  quantidade= c(length(unique(cadastro$cargo)),length(unique(cadastro$descricao_cargo)))) 
 
-# datatable(cadastro %>% filter(str_detect(descricao_cargo,"ADMINISTRADOR")) %>% group_by( cargo,descricao_cargo) %>% count())
+tabela_cargos%>% kable(col.names = c("atributo","quantidade de registros únicos"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 
-# datatable(cadastro  %>% group_by( cargo,descricao_cargo,descricao_01 ) %>% count())
-
-#ESPEC ANALISE PROC DE NEGOCIOS-40H analista
-# AUDITOR-FISCAL	AUDITOR-FISCAL DA RECEITA FEDERAL BRASIL
-# 	PROESU	PROESU - ADVOGADO
-# PROF	PROF DE SERV ASSISTENCIAIS III
-# PROIND	PROIND - INSPETOR DE CONTR DA QUALIDADE
-# PROSAL	PROSAL - SUPERVISOR DE PESSOAL
-# TEC	TEC DE COLONIZACAO
-# 	TNS	TNS - TECNICO DE OPERACOES
-
-incomum <- c("MOÇO DE MAQUINAS", "ADERECISTA","AFIADOR", "ASCENSORISTA", "BARQUEIRO", "BARBEIRO" ,"CABISTA", "CONFERENTE", "COPEIRO" ,"COREOGRAFO", "DATILOGRAFO", "ENCADERNADOR", "ESTOFADOR" ,"FRESADOR", "IMPRESSOR","IDENTIFICADOR","INSTALADOR","JORNALISTA","MACARIQUEIRO","	LIGADOR","LINOTIPISTA", "LEITURISTA","MAQUILADOR","MATEIRO", "REGENTE","TRATORISTA", "VAQUEIRO" ,"VESTIARISTA")
 ```
-
-´r length(cadastro\$cargo)´ x ´r length(cadastro\$descricao_cargo)´
 
 #### Alterações nas nomenclaturas
 
@@ -209,7 +219,7 @@ Alterações nos nomes dos órgãos e/ou dos cargos dificultam análises tempora
 cadastro %>% filter(id_servidor_portal == "312662320", descricao_cargo == "AUDITOR FISCAL DO TRABALHO") %>% group_by(nome_id,descricao_cargo, org_exercicio, data_diploma_ingresso_servicopublico,data_ingresso_orgao,) %>% count() %>% arrange(data_ingresso_orgao) %>% select(-n) %>% kable()
 ```
 
-Ao analisar os dados cadastrais, tudo indica que uma alteração na nomenclatura do cargo afeta a dada de ingresso no cargo. Por exemplo, em 2016 o cargo de analista de finanças e controle passou a ser chamado de auditor federal de finanças e controle. A @tbl-cgu_cargo indica que todos os servidores com o cargo auditor federal de finanças e controle assumiram o cargo a partir de 2016. Dessa forma, ficam prejudicadas as análises temporais envolvendo o atributo cargo.
+Ao analisar os dados cadastrais, tudo indica que uma alteração na nomenclatura do cargo afeta a dada de ingresso no cargo. Por exemplo, em 2016 o cargo de analista de finanças e controle passou a ser chamado de auditor federal de finanças e controle. A @tbl-cgu_cargo indica que todos os servidores com o cargo auditor federal de finanças e controle assumiram o cargo a partir de 2016. A informação e corroborada por uma pesquisa ao Portal da Transparência @fig-servidores_portal_mudanca_cargo indicando a alteração do cargo de um determinado servidor. Dessa forma, ficam prejudicadas as análises temporais envolvendo o atributo cargo.
 
 ```{r cgu_cargo_auditor}
 #| warning: false
@@ -219,7 +229,7 @@ Ao analisar os dados cadastrais, tudo indica que uma alteração na nomenclatura
 #| tbl-cap: CGU - quantitativo de auditores federais de finanças e controle
 
 
-cadastro %>% filter(descricao_cargo == "AUDITOR FEDERAL DE FINANCAS E CONTROLE", org_exercicio == "Controladoria-Geral da União" ) %>% group_by(inicio_cargo) %>% arrange(desc(inicio_cargo)) %>% count()  %>% kable(col.names = c("ano","ingressos"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))  
+cadastro %>% filter(descricao_cargo == "AUDITOR FEDERAL DE FINANCAS E CONTROLE", org_exercicio == "Controladoria-Geral da União" ) %>% group_by(inicio_cargo) %>% arrange(desc(inicio_cargo)) %>% mutate(inicio_cargo = paste0(" ",inicio_cargo)) %>% count()  %>% kable(col.names = c("ano","ingressos"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))  
 
 
 
@@ -228,7 +238,7 @@ cadastro %>% filter(descricao_cargo == "AUDITOR FEDERAL DE FINANCAS E CONTROLE",
 
 ```
 
-![](servidores/servidores/historico_cargo.png)
+![](servidores/servidores/historico_cargo.png){#fig-servidores_portal_mudanca_cargo}
 
 #### Atenção com as datas
 
@@ -260,14 +270,18 @@ cadastro  %>% select(data_diploma_ingresso_servicopublico, data_ingresso_orgao) 
 
 ### Tabela Remuneração
 
+A tabela remuneração traz a remuneração básica bruta e a remuneração após deduções obrigatórias, optamos por utilizar apenas a remuneração básica bruta.
+
 ```{r read_remuneracao}
 remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Remuneracao_servidor.csv", 
-    delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
-        decimal_mark = ",", grouping_mark = ".", 
-        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names() %>% mutate( nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
+delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+decimal_mark = ",", grouping_mark = ".", encoding = "Latin1"), trim_ws = TRUE) %>%
+clean_names() %>%
+mutate( nome_id = 
+        str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
 
 
-remuneracao <- remuneracao%>% select(ano,mes,id_servidor_portal, nome, cpf, nome_id, remuneracao_apos_deducoes_obrigatorias_r, remuneracao_basica_bruta_r)
+remuneracao <- remuneracao%>% select(ano,mes,id_servidor_portal, nome, cpf, nome_id,remuneracao_basica_bruta_r)
 
 remuneracao <- remuneracao %>% filter(!startsWith(ano, "(*) Verbas indenizatórias são as parcelas indenizatórias"))
 ```
@@ -336,20 +350,18 @@ A @tbl-diferenca_nrow_cadastro_remuneracao aponta a diferença no número de reg
 
 
 vinculos <- c(
-  
  as.numeric(nrow(cadastro)),
-  
  as.numeric(nrow(remuneracao)),
-  as.numeric(nrow(cadastro))-as.numeric(nrow(remuneracao))
- 
-  
-  )
+ as.numeric(nrow(cadastro))-as.numeric(nrow(remuneracao))
+ )
 
 origem <- c("cadastro", "remuneração" , "diferença de registros" )
 
 diferenca <- data.frame(origem,vinculos)
 
-diferenca  %>% kable(col.names = c("base de dados", "quantidade na quantidade de registros"), format.args = list(big.mark = ".", decimal.mark = ","))
+diferenca  %>% kable(col.names = 
+              c("base de dados", "quantidade na quantidade de registros"),
+              format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 A @tbl-batimento_diferenca_nrow_cadastro_remuneracao aponta que a diferença no número de registros das duas bases de dados é resultado dos dados duplicados @tbl-dados_duplicados e dos servidores ausentes na base remuneração @tbl-servidores_ausente_base_remuneracao
@@ -364,14 +376,13 @@ A @tbl-batimento_diferenca_nrow_cadastro_remuneracao aponta que a diferença no 
 
 
 vinculos <- c(
-  
-  as.numeric(nrow(cadastro))-as.numeric(nrow(remuneracao)),
-  
- as.numeric(nrow(cadastro %>% filter(nome_id %in% nao_inclusos$nome_id))*-1),
- as.numeric( sum((cadastro%>% filter(nome_id %notin% nao_inclusos$nome_id) %>% group_by(nome_id) %>% count() %>% group_by(n) %>% count() %>% mutate (repetidos = (n-1)*nn))$repetidos)*-1)
- 
-  
-  )
+as.numeric(nrow(cadastro))-as.numeric(nrow(remuneracao)),
+
+as.numeric(nrow(cadastro %>% filter(nome_id %in% nao_inclusos$nome_id))*-1),
+
+as.numeric( sum((cadastro%>% filter(nome_id %notin% nao_inclusos$nome_id) %>% group_by(nome_id) %>% count() %>%
+group_by(n) %>% count() %>% mutate (repetidos = (n-1)*nn))$repetidos)*-1)
+   )
 
 origem <- c("diferença entre a base cadastro e a base remuneração", "registors ausentes na base remuneração" , "registros duplicados na base cadastro" )
 
@@ -385,33 +396,32 @@ diferenca %>% adorn_totals()  %>% kable(col.names = c("base de dados", "quantida
 ```{r left_join}
 servidores <- left_join(remuneracao ,cadastro  )
 
-# servidores <- servidores %>% mutate(cargo = str_)
-
-
-# servidores <- servidores %>% mutate( data_ingresso_cargofuncao= parse_date_time(data_ingresso_cargofuncao,"dmy") , data_diploma_ingresso_servicopublico= parse_date_time(data_diploma_ingresso_servicopublico,"dmy"), data_ingresso_orgao = parse_date_time(data_ingresso_orgao,"dmy"),inicio_cargo = year(data_ingresso_cargofuncao), inicio_servico_publico = year(data_diploma_ingresso_servicopublico), inicio_orgao = year(data_ingresso_orgao),tempo_setor_publico= time_length(difftime(today() ,data_diploma_ingresso_servicopublico ), "years"), tempo_cargo= time_length(difftime(today() ,data_ingresso_cargofuncao ), "years") )
-# 
-# servidores <- servidores %>% mutate(tempo_setor_publico= time_length(difftime(today() ,data_diploma_ingresso_servicopublico ), "years"), tempo_cargo= time_length(difftime(today() ,data_ingresso_cargofuncao ), "years"))
-
-
 
 ```
 
 ```{r funcao_gratificada}
-servidores %>% filter(nivel_funcao != "-1", org_exercicio == "Universidade Federal de Santa Maria - RS") %>% group_by( funcao, nivel_funcao) %>% summarise(tempo_setor_publico = round(mean(tempo_setor_publico,na.rm = TRUE),1), q=n(), remuneracao = mean(max(remuneracao_apos_deducoes_obrigatorias_r))) %>% filter(q>100) %>% arrange(desc(q))%>% head(20) %>% kable()
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-funcao_gratificada
+#| tbl-cap: Função Gratificada
+
+servidores %>% filter(nivel_funcao != "-1", org_exercicio == "Universidade Federal de Santa Maria - RS") %>% group_by( funcao, nivel_funcao) %>% summarise(tempo_servico_publico = round(mean(tempo_servico_publico,na.rm = TRUE),1), q=n(), remuneracao = mean(max(remuneracao_basica_bruta_r))) %>% filter(q>100) %>% arrange(desc(q))%>% head(20) %>% kable()
 ```
 
 ##### 
 
-```{r rju_cargo}
-servidores %>% filter(regime_juridico =="REGIME JURIDICO UNICO") %>% group_by(cargo) %>% summarise(trabalho_medio = mean(tempo_setor_publico,na.rm = TRUE), q=n() )%>% arrange(desc(trabalho_medio))%>% head(10) %>% kable()
-
-
+```{}
 ```
 
 ```{r cargo_tempo}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-cargo_tempo
+#| tbl-cap: Tempo de serviço público por cargo
 
-
-datatable( servidores %>% filter(tempo_setor_publico>0, cargo %notin% c("Sem", "Inválido", "Sigiloso") ) %>% group_by(cargo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico, na.rm = TRUE),1),maximo = round(max(tempo_setor_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) )
+datatable( servidores %>% filter(tempo_servico_publico>0, cargo %notin% c("Sem", "Inválido", "Sigiloso") ) %>% group_by(cargo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) )
 
 
 
@@ -420,20 +430,34 @@ datatable( servidores %>% filter(tempo_setor_publico>0, cargo %notin% c("Sem", "
 ```
 
 ```{r vinculo_x_tempo}
-datatable( servidores %>% filter(tempo_setor_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico, na.rm = TRUE),1),maximo = max(tempo_setor_publico),  q=n())  %>% arrange(desc(trabalho_medio)) )
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-vinculo_tempo
+#| tbl-cap: Tempo de serviço público por tipo de vínculo
+
+datatable( servidores %>% filter(tempo_servico_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) )
 ```
 
 ```{r ministros}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-ministros_tempo
+#| tbl-cap: Ministros, tempo de serviço público e duração no cargo
 
-
-
-datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% select(nome, org_exercicio , tempo_cargo, tempo_setor_publico  ) )
+datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% group_by(nome, org_exercicio  ) %>% summarise(tempo_servico_publico = round(tempo_servico_publico,1), tempo_cargo = round(tempo_cargo,1)), colnames = c("Ministro", "Órgão", "Tempo no cargo (anos)", "Tempo de serviço público (anos)"), rownames = FALSE, filter = 'top', options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) )
 
 
 
 ```
 
 ##### Comparando valores
+
+Para evitar inconsistências na soma da remuneração devido a duplicidade de dados (vide @tbl-dados_duplicados) em algumas situações utilizamos as funções max( ) e unique ( ). A @tbl-df_valores_duplicados ilustra a aplicação das funções max( ) e unique( );
 
 ```{r valores_duplicados_comparacao}
 #| warning: false
@@ -444,14 +468,17 @@ datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% s
 
 
 valores <- c(
+  # "tabela servidores"
+  as.numeric(servidores %>% select(nome_id, remuneracao_basica_bruta_r)  %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_basica_bruta_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
   
-  as.numeric(servidores %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
-  
- as.numeric(servidores %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+  # "servidores_unique"
+ as.numeric(servidores %>% select(nome_id, remuneracao_basica_bruta_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_basica_bruta_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
  
-  as.numeric(servidores %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(max(remuneracao_apos_deducoes_obrigatorias_r), na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+ # "servidores_max"
+  as.numeric(servidores %>% select(nome_id, remuneracao_basica_bruta_r)  %>% group_by(nome_id) %>% summarise(valor = sum(max(remuneracao_basica_bruta_r), na.rm = TRUE)) %>% summarise(valor = sum(valor))),
  
- sum(remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)
+ # "tabela remuneração"
+ sum(remuneracao$remuneracao_basica_bruta_r, na.rm = TRUE)
   
   )
 
@@ -487,10 +514,10 @@ calculo %>% kable( col.names = c("fonte", "valor (R$)"),format.args = list(big.m
 #| tbl-cap: Maiores remunerações no mês
 
 
-servidores  %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_apos_deducoes_obrigatorias_r))) %>% arrange(desc(valor)) %>% head() %>% kable(col.names = c("benficiário", "valor (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
-id_maior <-  as.character( servidores  %>% group_by(  id_servidor_portal) %>% summarise(valor = max((remuneracao_apos_deducoes_obrigatorias_r))) %>% arrange(desc(valor)) %>% head(1) %>% select(id_servidor_portal))
+servidores  %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_basica_bruta_r))) %>% arrange(desc(valor)) %>% head() %>% kable(col.names = c("benficiário", "valor (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
+id_maior <-  as.character( servidores  %>% group_by(  id_servidor_portal) %>% summarise(valor = max((remuneracao_basica_bruta_r))) %>% arrange(desc(valor)) %>% head(1) %>% select(id_servidor_portal))
 
-maior <- str_remove( paste("https://portaldatransparencia.gov.br/servidores/",id_maior)," ")
+
 
 
 
@@ -508,14 +535,14 @@ maior <- str_remove( paste("https://portaldatransparencia.gov.br/servidores/",id
 
 
 
-df_plot <- servidores %>% mutate(ano = floor_date(data_diploma_ingresso_servicopublico, "year"))  %>% group_by(ano)  %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r), n=n()) %>% mutate (etiqueta = paste0(year(ano),": ", Format(n, fmt = myNumFmt)," ingressos"))%>% drop_na()  
+df_plot <- servidores %>% mutate(ano = floor_date(data_diploma_ingresso_servicopublico, "year"))  %>% group_by(ano)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n()) %>% mutate (etiqueta = paste0(year(ano),": ", Format(n, fmt = myNumFmt)," ingressos"))%>% drop_na()  
 
 
 
 presidentes <- read_excel("presidentes.xlsx", 
                           col_types = c("text","date", "date", "date", "text", "text"))  %>% mutate(cor = fct_reorder(cor, party), presidencia =  interval(start, end) , regra = paste0("ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('",start, "'),ymd('", end, "'))","~", "'", name, "',"))
 
-df_plot_agregado <- servidores  %>% group_by( data_diploma_ingresso_servicopublico)  %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r), n=n())%>% drop_na() %>% mutate(presidente = case_when(
+df_plot_agregado <- servidores  %>% group_by( data_diploma_ingresso_servicopublico)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n())%>% drop_na() %>% mutate(presidente = case_when(
  ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1964-04-15'),ymd('1985-03-15'))~'Militares',
  ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1985-03-15'),ymd('1990-03-15'))~'Sarney',
  ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1990-03-15'),ymd('1992-12-29'))~'Collor',
@@ -622,32 +649,9 @@ servidores %>% filter(descricao_cargo == "Sem informaç")%>% group_by(orgsup_exe
 servidores %>% filter(descricao_cargo == "Sem informaç")%>% group_by(regime_juridico )    %>% summarise( q=n()) %>% arrange(desc(q)) %>% head(10)%>% kable(col.names = c("descricao_cargo", "n"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
-### Incomum
+1.  qual é a defasagem temporal entre a solicitação e a concessão do benefício previdenciário.
 
-```{r incomum}
-#| warning: false
-#| message: false
-#| error: false
-#| label: tbl-menores_valores_medios_por_cargo
-#| tbl-cap: Menores valores médios por cargo do instituidor da pensão (R$)
-
-```
-
-```{r incomum}
-servidores %>% filter(cargo %in% c(incomum)) %>% group_by(cargo) %>% summarise(media = mean(remuneracao_basica_bruta_r, na.rm = TRUE) , maior = max (remuneracao_basica_bruta_r, na.rm = TRUE), q = n()) %>% arrange(desc(maior)) %>%  kable( digits = 0,format.args = list(big.mark = ".", decimal.mark = ","))
-```
-
-## Considerações finais
-
-Pesquisas futuras podem investigar:
-
-1.  os motivos para os picos ocorridos em 1980 e 2004 na concessão de benefícios para filhos. @fig-pensionista_tipo_pensao
-
-2.  os motivos para dois beneficiários constarem na tabela cadastro, mas estarem ausentes na tabela remuneração. @tbl-beneficiario_ausente_base_remuneracao
-
-3.  qual é a defasagem temporal entre a solicitação e a concessão do benefício previdenciário.
-
-4.  os motivos dos dados sigilosos na tabele cadastro
+2.  os motivos dos dados sigilosos na tabele cadastro
 
 Seria interessante se a base de dados disponibilizasse:
 
