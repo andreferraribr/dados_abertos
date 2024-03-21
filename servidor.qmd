@@ -277,6 +277,10 @@ cadastro  %>% select(data_diploma_ingresso_servicopublico, data_ingresso_orgao) 
 
 A tabela remuneração traz a remuneração básica bruta e a remuneração após deduções obrigatórias, optamos por utilizar apenas a remuneração básica bruta.
 
+A remuneração bruta emgloba todos as remunerações do servidor. Por exemplo, se o servidor tem um cargo de professor e outro de médico, o valor da remuneração bruta sera a somas das remuneração. A base de dados não permite identificar, separadamente, qual foi a remureção de cada cargo. O mesmo ocorre quando um servidor tem uma função gratificada. Se o servidor tem um cargo de professor e uma função de diretor é impossível identificar quanto o servidor recebeu pela função de diretoria.
+
+Sempre que o servidor tiver mais de uma fonte de remuneração não poderemos segregar o valor de cada uma das fontes de remuneração.
+
 ```{r read_remuneracao}
 remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Remuneracao_servidor.csv", 
 delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
@@ -291,7 +295,7 @@ remuneracao <- remuneracao%>% select(ano,mes,id_servidor_portal, nome, cpf, nome
 remuneracao <- remuneracao %>% filter(!startsWith(ano, "(*) Verbas indenizatórias são as parcelas indenizatórias"))
 ```
 
-### Cuidados antes de associar as tabelas
+### Cuidados ao associar as tabelas
 
 #### Dados ausentes
 
@@ -317,6 +321,10 @@ datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(
 
 ```
 
+A seguir apresentamos em duas tabelas o detalhamento por órgão dos ervidores ausentes na tabela de remuneração. Na primeira A @tbl-servidores_ausente_base_remuneracao_por_orgao_exceto_sigilogo, trazemos todos servidores, exceto os com dados sigilosos. Na primeira A @tbl-servidores_ausente_base_remuneracao_por_orgao_apenas_sigilogo lista apenas os servidores com dados sigilosos.
+
+Destaque para a Empresa Brasileira de Serviços Hospitalares dentre os servidores sem dados sigilosos.
+
 ```{r nao_incluso_exceto_sigiloso}
 #| warning: false
 #| message: false
@@ -326,11 +334,13 @@ datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(
  # cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% arrange(desc(n)) %>% head()   %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
  
  
- datatable(  cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by(org_exercicio) %>% count()%>% adorn_totals() %>% arrange(desc(n)), colnames = c("Vínculo", "Quantidade"), rownames = FALSE, options = list(
+ datatable(  cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by( org_exercicio) %>% count()%>% adorn_totals() %>% arrange(desc(n)), colnames = c( "Órgão", "Quantidade"), rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
 ```
+
+Em relação aos dados sigilosos, destaque para os policiais federais (PF e PRF).
 
 ```{r  nao_incluso_sigiloso}
 #| warning: false
@@ -342,7 +352,7 @@ datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(
 
 
  
- datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo == "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% adorn_totals()%>% arrange(desc(n)), colnames = c("Vínculo", "Quantidade"), rownames = FALSE, options = list(
+ datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo == "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% adorn_totals()%>% arrange(desc(n)), colnames = c("Órgão", "Quantidade"), rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
@@ -382,14 +392,13 @@ cadastro %>% filter(nome_id %notin% nao_inclusos$nome_id) %>% filter(nome != "Si
 
 ### Batimento das bases de dados cadastro e remuneração
 
-A @tbl-diferenca_nrow_cadastro_remuneracao aponta a diferença no número de registros entre os dados cadastrais e os dados da remuneração.
+A @tbl-diferenca aponta a diferença no número de registros entre os dados cadastrais e os dados da remuneração.
 
-```{r diferenca_nrow_cadastro_remuneracao}
-
+```{r diferenca}
 #| warning: false
 #| message: false
 #| error: false
-#| label: tbl-diferenca_nrow_cadastro_remuneracao
+#| label: tbl-diferenca
 #| tbl-cap: Diferença no número de registros cadastro x remuneração
 
 
@@ -408,14 +417,13 @@ diferenca  %>% kable(col.names =
               format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
-A @tbl-batimento_diferenca_nrow_cadastro_remuneracao aponta que a diferença no número de registros das duas bases de dados é resultado dos dados duplicados @tbl-dados_duplicados e dos servidores ausentes na base remuneração @tbl-servidores_ausente_base_remuneracao
+A @tbl-batimento aponta que a diferença no número de registros das duas bases de dados é resultado dos dados duplicados @tbl-dados_duplicados e dos servidores ausentes na base remuneração @tbl-servidores_ausente_base_remuneracao
 
-```{r batimento_diferenca_nrow_cadastro_remuneracao}
-
+```{r batimento}
 #| warning: false
 #| message: false
 #| error: false
-#| label: tbl-batimento_diferenca_nrow_cadastro_remuneracao
+#| label: tbl-batimento
 #| tbl-cap: Explicando a diferença no número de registros cadastro x remuneração
 
 
@@ -437,71 +445,10 @@ diferenca %>% adorn_totals()  %>% kable(col.names = c("base de dados", "quantida
 
 ### Resultado da associação das tabelas: "servidores"
 
+Vamos utilizar a função left_join( ) para mesclar as tabelas remuneracao e cadastro a partir das chaves id_servidor_portal, nome, cpf, nome_id.
+
 ```{r left_join}
 servidores <- left_join(remuneracao ,cadastro  )
-
-
-```
-
-```{r funcao_gratificada}
-#| warning: false
-#| message: false
-#| error: false
-#| label: tbl-funcao_gratificada
-#| tbl-cap: Função Gratificada
-
-servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exercicio) %>% summarise(tempo_servico_publico = round(mean(tempo_servico_publico,na.rm = TRUE),1), q=n(), remuneracao = mean(max(remuneracao_basica_bruta_r)))  %>% arrange(desc(q))
-
-datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exercicio) %>% summarise( q=n())%>% adorn_totals()  %>% arrange(desc(q)) , colnames = c("Órgão","Quantidade"), rownames = FALSE, options = list(
-  pageLength = 10,
-  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
-) ) %>% formatRound(c("q"), mark = ".", dec.mark = ",",0)
-```
-
-```{r}
-datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  funcao) %>% summarise( q=n())%>% adorn_totals()  %>% arrange(desc(q)) , colnames = c("Órgão","Quantidade"), rownames = FALSE, options = list(
-  pageLength = 10,
-  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
-) ) %>% formatRound(c("q"), mark = ".", dec.mark = ",",0)
-```
-
-```{r cargo_tempo}
-#| warning: false
-#| message: false
-#| error: false
-#| label: tbl-cargo_tempo
-#| tbl-cap: Tempo de serviço público por cargo
-
-datatable( servidores %>% filter(tempo_servico_publico>0, cargo %notin% c("Sem", "Inválido", "Sigiloso") ) %>% group_by(cargo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) )
-
-
-
-
-
-```
-
-```{r vinculo_x_tempo}
-#| warning: false
-#| message: false
-#| error: false
-#| label: tbl-vinculo_tempo
-#| tbl-cap: Tempo de serviço público por tipo de vínculo
-
-datatable( servidores %>% filter(tempo_servico_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) )
-```
-
-```{r ministros}
-#| warning: false
-#| message: false
-#| error: false
-#| label: tbl-ministros_tempo
-#| tbl-cap: Ministros, tempo de serviço público e duração no cargo
-
-datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% group_by(nome, org_exercicio  ) %>% summarise(tempo_servico_publico = round(tempo_servico_publico,1), tempo_cargo = round(tempo_cargo,1)), colnames = c("Ministro", "Órgão", "Tempo no cargo (anos)", "Tempo de serviço público (anos)"), rownames = FALSE, options = list(
-  pageLength = 10,
-  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
-) )
-
 
 
 ```
@@ -552,11 +499,46 @@ calculo %>% kable( col.names = c("fonte", "valor (R$)"),format.args = list(big.m
 
 ```
 
+A partir de agora podemos fazer análises com dados sobre a remuneração e com os dados cadastrais dos serivodres.
+
 ## Análise dos dados
 
-### Maiores benefícios
+### Tempo de serviço público detalhado por vínculo
 
-```{r maiores_individual}
+```{r tempo_vinculo}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-vinculo_tempo
+#| tbl-cap: Tempo de serviço público por tipo de vínculo
+
+datatable( servidores %>% filter(tempo_servico_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)), colnames = c( "Vínculo", "Tempo médio de serviço público", "Tempo máximo de serviço público",  "Quantidade"),  rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound (c("trabalho_medio", "maximo","q"), mark = ".", dec.mark = ",", 0 )
+```
+
+```{}
+```
+
+### Tempo de serviço público detalhado por cargo
+
+```{r tempo_cargo}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-cargo_tempo
+#| tbl-cap: Tempo de serviço público por cargo
+
+datatable( servidores %>% filter(tempo_servico_publico>0, cargo %notin% c("Sem", "Inválido", "Sigiloso") ) %>% group_by(cargo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) , colnames = c( "Cargo", "Tempo médio de serviço público", "Tempo máximo de serviço público",  "Quantidade"),  rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound (c("trabalho_medio", "maximo","q"), mark = ".", dec.mark = ",", 0 )
+```
+
+### Valores e quantidade de beneficiários
+
+```{r maior_individual}
 
 #| warning: false
 #| message: false
@@ -567,19 +549,73 @@ calculo %>% kable( col.names = c("fonte", "valor (R$)"),format.args = list(big.m
 
 servidores  %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_basica_bruta_r))) %>% arrange(desc(valor)) %>% head() %>% kable(col.names = c("benficiário", "valor (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
 id_maior <-  as.character( servidores  %>% group_by(  id_servidor_portal) %>% summarise(valor = max((remuneracao_basica_bruta_r))) %>% arrange(desc(valor)) %>% head(1) %>% select(id_servidor_portal))
-
-
-
-
-
-
 ```
 
-![Portal da Transparência: maiores remunerações](servidores/servidores/top_benficio.png){#fig-top_remuneracao}
+### Maiores valores por cargo
 
-### Valores e quantidade de beneficiários
+```{r remuneracao}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-todos
+#| tbl-cap: todos valores médios por cargo do instituidor da pensão (R$)
+datatable( servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) , colnames = c( "Cargo","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 
-```{r plot_presidentes}
+# servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r)) %>% mutate( medio = valor/q ) %>% arrange(desc(q)) %>% head(20)%>% kable(col.names = c("Cargo","Quantidade", "Valor", "Valor médio"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+#### Cargo professor
+
+```{r professor}
+datatable( servidores %>% filter(cargo == "PROFESSOR", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q))  , colnames = c( "Cargo detalhado","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
+```
+
+#### Cargo médico
+
+```{r medico}
+datatable( servidores %>% filter(cargo == "MEDICO", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) , colnames = c( "Cargo detalhado","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
+```
+
+#### Cargo analista
+
+```{r analista}
+datatable( servidores %>% filter(cargo == "ANALISTA", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)), colnames = c( "Cargo detalhado","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
+```
+
+### Função 
+
+```{r funcao_gratificada_orgao}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-funcao_gratificada
+#| tbl-cap: Função Gratificada
+
+
+datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exercicio) %>% summarise( q=n())%>% adorn_totals()  %>% arrange(desc(q)) , colnames = c("Órgão","Quantidade"), rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound(c("q"), mark = ".", dec.mark = ",",0)
+```
+
+### Ministros
+
+```{r ministros}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-ministros_tempo
+#| tbl-cap: Ministros, tempo de serviço público e duração no cargo
+
+datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% group_by(nome, org_exercicio  ) %>% summarise(tempo_servico_publico = round(tempo_servico_publico,1), tempo_cargo = round(tempo_cargo,1)), colnames = c("Ministro", "Órgão", "Tempo no cargo (anos)", "Tempo de serviço público (anos)"), rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) )
+```
+
+### Adminissões ao longo do tempo
+
+```{r plot_presidente}
 #https://bookdown.dongzhuoer.com/hadley/ggplot2-book/custom-annotations
 
 
@@ -618,9 +654,34 @@ df_plot_agregado <- servidores  %>% group_by( data_diploma_ingresso_servicopubli
  ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'PT'  ,
  .default = "Antes de 1964"))  
 
+
+df_plot_agregado_2 <- servidores %>% filter(data_diploma_ingresso_servicopublico > "1995-01-01", cargo %in% c("MEDICO", "PROFESSOR", "AUDITOR", "ANALISTA", "TECNICO", "ASSISTENTE", "AGENTE", "ESPECIALISTA", "TECNOLOGO", "PESQUISADOR", "PERITO", "GUARDA", "CONTADOR","AUXILIAR", "ADMINISTRADOR", "PROCURADOR", "ENGENHEIRO","ENFERMEIRO")) %>% group_by( data_diploma_ingresso_servicopublico, cargo)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n())%>% drop_na() %>% mutate(presidente = case_when(
+  ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1995-01-01'),ymd('2002-12-31'))~'FHC',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2003-01-01'),ymd('2010-12-31'))~'Lula',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2011-01-01'),ymd('2016-08-31'))~'Dilma',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2016-08-31'),ymd('2018-12-31'))~'Temer',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2019-01-01'),ymd('2022-12-31'))~'Bolsonaro',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'Lula'  ,
+ .default = "Antes de 1964"),
+ partido = case_when(
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1964-04-15'),ymd('1985-03-15'))~'Militares',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1985-03-15'),ymd('1990-03-15'))~'PMDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1990-03-15'),ymd('1992-12-29'))~'PRN',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1992-12-29'),ymd('1995-01-01'))~'PMDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1995-01-01'),ymd('2002-12-31'))~'PSDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2003-01-01'),ymd('2010-12-31'))~'PT',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2011-01-01'),ymd('2016-08-31'))~'PT',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2016-08-31'),ymd('2018-12-31'))~'PMDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2019-01-01'),ymd('2022-12-31'))~'PL',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'PT'  ,
+ .default = "Antes de 1995"))  
+
+
 df_plot_agregado%>% group_by(partido) %>% summarise(q = sum(n))%>% mutate(participacao = q/sum(q)*100) %>% arrange(desc(q)) %>% kable(digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
 
-apply(X = is.na(servidores %>% select(data_diploma_ingresso_servicopublico, data_ingresso_orgao, data_ingresso_cargofuncao)), MARGIN = 2, FUN = sum) %>% kable(digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+
+df_plot_agregado_2%>% group_by(partido, cargo) %>% summarise(q = sum(n))%>% mutate(participacao = q/sum(q)*100) %>% arrange(desc(q)) %>% kable(digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+
 
 p <- ggplot(df_plot) + 
   geom_rect(
@@ -646,59 +707,9 @@ p <- ggplot(df_plot) +
 ggplotly(p)
 
 
-
-
-
-
-
-
-```
-
-### Maiores valores por cargo do instituidor da pensão
-
-```{r remuneracao}
-#| warning: false
-#| message: false
-#| error: false
-#| label: tbl-todos
-#| tbl-cap: todos valores médios por cargo do instituidor da pensão (R$)
-datatable( servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) ) %>% formatRound (c("total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
-
-
-# servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r)) %>% mutate( medio = valor/q ) %>% arrange(desc(q)) %>% head(20)%>% kable(col.names = c("Cargo","Quantidade", "Valor", "Valor médio"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
-```
-
-```{r professor}
-datatable( servidores %>% filter(cargo == "PROFESSOR", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
-```
-
-```{r medico}
-datatable( servidores %>% filter(cargo == "MEDICO", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
-```
-
-```{r analista}
-datatable( servidores %>% filter(cargo == "ANALISTA", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
-```
-
-```{r funcao}
-
-
-
-servidores %>% filter(descricao_cargo == "Sem informaç")%>% group_by(funcao, nome_id , org_exercicio)    %>% summarise(valor = max(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head(10)%>% kable(col.names = c("descricao_cargo","nome","orgao" ,"Valor total dos benefícios pagos aos dependentes (R$)"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 ### Maiores valores médios por cargo do instituidor da pensão
-
-```{r por_orgao}
-servidores %>% filter(descricao_cargo == "Sem informaç")%>% group_by(orgsup_exercicio )    %>% summarise( q=n()) %>% arrange(desc(q)) %>% head(10)%>% kable(col.names = c("descricao_cargo", "n"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
-
-
-```
-
-```{r por_regime}
-
-servidores %>% filter(descricao_cargo == "Sem informaç")%>% group_by(regime_juridico )    %>% summarise( q=n()) %>% arrange(desc(q)) %>% head(10)%>% kable(col.names = c("descricao_cargo", "n"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
-```
 
 1.  qual é a defasagem temporal entre a solicitação e a concessão do benefício previdenciário.
 
