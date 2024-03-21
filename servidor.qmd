@@ -80,7 +80,7 @@ Criamos o atributo "cargo" para tentar consolidar todos os cargos registrados no
 
 Alguns agrupamentos foram tranquilos, outros foram "chutes". Quando o cargo aparecia tanto no masculino quanto no feminino, optei pela descrição no masculino (recreadora x recreador). Em algumas situações, por falta de inspiração/conhecimento, deixei o cargo como descrito na base de dados (ex: CUX DE MANUTENCAO E SERV OPERACIONAIS)
 
-A @tbl-cargo_x_cargo_descricao traz o resultado da consolidação, uma redução de quase 2.000 na quantidade de cargos distintos.
+A @tbl-cargo_x_cargo_descricao traz o resultado da consolidação, uma redução de quase 2.000 cargos.
 
 ```{r cadastro_cargos}
 #| warning: false
@@ -216,10 +216,15 @@ Alterações nos nomes dos órgãos e/ou dos cargos dificultam análises tempora
 #| error: false
 #| label: tbl-alteracao_nome_ministerio
 #| tbl-cap: Alteração no nome do ministério
-cadastro %>% filter(id_servidor_portal == "312662320", descricao_cargo == "AUDITOR FISCAL DO TRABALHO") %>% group_by(nome_id,descricao_cargo, org_exercicio, data_diploma_ingresso_servicopublico,data_ingresso_orgao,) %>% count() %>% arrange(data_ingresso_orgao) %>% select(-n) %>% kable()
+# cadastro %>% filter(id_servidor_portal == "312662320", descricao_cargo == "AUDITOR FISCAL DO TRABALHO") %>% group_by(nome_id,descricao_cargo, org_exercicio, data_diploma_ingresso_servicopublico,data_ingresso_orgao,) %>% count() %>% arrange(data_ingresso_orgao) %>% select(-n) %>% kable()
+
+
+datatable( cadastro %>% filter(id_servidor_portal == "312662320", descricao_cargo == "AUDITOR FISCAL DO TRABALHO") %>% group_by(nome_id,descricao_cargo, org_exercicio, data_diploma_ingresso_servicopublico,data_ingresso_orgao,) %>% count() %>% arrange(data_ingresso_orgao) %>% select(-n), colnames = c( "nome_id", "cargo", "órgão", "ingresso no serviço público", "ingresso no órgao"),  rownames = FALSE, options = list(
+   autoWidth = TRUE, keys = TRUE
+) ) %>% formatDate(c ("data_diploma_ingresso_servicopublico","data_ingresso_orgao"),  method="toLocaleDateString")
 ```
 
-Ao analisar os dados cadastrais, tudo indica que uma alteração na nomenclatura do cargo afeta a dada de ingresso no cargo. Por exemplo, em 2016 o cargo de analista de finanças e controle passou a ser chamado de auditor federal de finanças e controle. A @tbl-cgu_cargo indica que todos os servidores com o cargo auditor federal de finanças e controle assumiram o cargo a partir de 2016. A informação e corroborada por uma pesquisa ao Portal da Transparência @fig-servidores_portal_mudanca_cargo indicando a alteração do cargo de um determinado servidor. Dessa forma, ficam prejudicadas as análises temporais envolvendo o atributo cargo.
+Ao analisar os dados cadastrais, tudo indica que uma alteração na nomenclatura do cargo afeta a data de ingresso no cargo. Por exemplo, em 2016 o cargo de analista de finanças e controle passou a ser chamado de auditor federal de finanças e controle. A @tbl-cgu_cargo indica que todos os servidores com o cargo auditor federal de finanças e controle assumiram o cargo a partir de 2016. A nossa suspeita é corroborada por uma pesquisa ao Portal da Transparência @fig-servidores_portal_mudanca_cargo indicando a alteração do cargo de um determinado servidor. Dessa forma, ficam prejudicadas as análises temporais envolvendo o atributo cargo.
 
 ```{r cgu_cargo_auditor}
 #| warning: false
@@ -242,19 +247,19 @@ cadastro %>% filter(descricao_cargo == "AUDITOR FEDERAL DE FINANCAS E CONTROLE",
 
 #### Atenção com as datas
 
-A base de dados cadastrais tem dezenas de milhares de dados ausentes para as datas de de ingresso no setor público, no órgão e no cargo.
+A base de dados cadastrais tem dezenas de milhares de dados ausentes para as datas de ingresso no serviço público, no órgão e no cargo.
 
 ```{r sem_data}
 #| warning: false
 #| message: false
 #| error: false
 #| label: tbl-NA_datas
-#| tbl-cap: Dados incompletos para as datas de ingresso no setor público, no órgão e no cargo.
+#| tbl-cap: Dados incompletos para as datas de ingresso no serviço público, no órgão e no cargo.
 
 apply(X = is.na(cadastro  %>% select(data_diploma_ingresso_servicopublico, data_ingresso_orgao, data_ingresso_cargofuncao)), MARGIN = 2, FUN = sum) %>% kable(col.names = "quantidade de NA" ,digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
-Nós comparamos a data de ingresso no serviço público com a data de ingresso no órgão. Intuitivamente imaginamos que a data de ingresso no setor público deveria ser igual ou preceder a data de ingresso no órgão. Contudo, não foi o que encontramos @tbl-ordem_ingresso_servico_cargo .
+Nós comparamos a data de ingresso no serviço público com a data de ingresso no órgão. Intuitivamente imaginamos que a data de ingresso no serviço público deveria ser igual ou preceder a data de ingresso no órgão. Contudo, não foi o que encontramos @tbl-ordem_ingresso_servico_cargo .
 
 ```{r ordem_ingresso_servico_cargo}
 #| warning: false
@@ -290,7 +295,7 @@ remuneracao <- remuneracao %>% filter(!startsWith(ano, "(*) Verbas indenizatóri
 
 #### Dados ausentes
 
-Criamos a tabela "nao_inclusos" a partir dos servidores relacionados na base cadastro, mas que estão ausentes na base remuneração.
+Criamos a tabela "nao_inclusos" a partir dos servidores relacionados na base cadastro, mas ausentes na base remuneração.
 
 Ao detalhar a tabela "nao_inclusos" por tipo de vínculo, é possível observar a prevalência do vínculo celetista/empregado e também a grande quantidade de registros marcados como sigilosos.
 
@@ -299,14 +304,48 @@ Ao detalhar a tabela "nao_inclusos" por tipo de vínculo, é possível observar 
 #| message: false
 #| error: false
 #| label: tbl-servidores_ausente_base_remuneracao
-#| tbl-cap: Beneficiários ausentes na base de dados da remuneração
+#| tbl-cap: Servidores ausentes na base de dados da remuneração
 
 nao_inclusos <- (setdiff(cadastro %>% select(nome_id),   remuneracao %>% select(nome_id)) )
 
-cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(situacao_vinculo) %>% count() %>% arrange(desc(n)) %>% adorn_totals()  %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
+# cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(situacao_vinculo) %>% count() %>% arrange(desc(n)) %>% adorn_totals()  %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
+
+datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(situacao_vinculo) %>% count() %>% adorn_totals() %>% arrange(desc(n)), colnames = c("Vínculo", "Quantidade"), rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
+
+```
+
+```{r nao_incluso_exceto_sigiloso}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-servidores_ausente_base_remuneracao_por_orgao_exceto_sigilogo
+#| tbl-cap: Servidores ausentes na base de dados da remuneração detalhado por órgão (exceto sigiloso)
+ # cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% arrange(desc(n)) %>% head()   %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
+ 
+ 
+ datatable(  cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by(org_exercicio) %>% count()%>% adorn_totals() %>% arrange(desc(n)), colnames = c("Vínculo", "Quantidade"), rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
+```
+
+```{r  nao_incluso_sigiloso}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-servidores_ausente_base_remuneracao_por_orgao_apenas_sigilogo
+#| tbl-cap: Servidores ausentes na base de dados da remuneração detalhado por órgão (apenas sigiloso)
+# cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo == "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% arrange(desc(n)) %>% head()   %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
 
 
-
+ 
+ datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo == "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% adorn_totals()%>% arrange(desc(n)), colnames = c("Vínculo", "Quantidade"), rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
 ```
 
 #### Dados duplicados {#sec-dados_duplicados}
@@ -319,7 +358,12 @@ A tabela cadastro pode retornar múltiplos registros para um único servidor. Po
 #| error: false
 #| label: tbl-servidor_duplicado
 #| tbl-cap: Servidor com múltiplos vínculos
-cadastro %>% filter(id_servidor_portal == "311102910") %>% group_by(nome_id,descricao_cargo, org_exercicio,data_ingresso_cargofuncao, data_ingresso_orgao) %>% count() %>% arrange(data_ingresso_cargofuncao) %>% select(-n) %>% kable()
+# cadastro %>% filter(id_servidor_portal == "311102910") %>% group_by(nome_id,descricao_cargo, org_exercicio,data_ingresso_cargofuncao, data_ingresso_orgao) %>% count() %>% arrange(data_ingresso_cargofuncao) %>% select(-n) %>% kable()
+
+datatable( cadastro %>% filter(id_servidor_portal == "311102910") %>% group_by(nome_id,descricao_cargo, org_exercicio,data_ingresso_cargofuncao, data_ingresso_orgao) %>% count() %>% arrange(data_ingresso_cargofuncao) %>% select(-n), colnames = c( "nome_id", "cargo", "órgão", "ingresso no cargo", "ingresso no órgao"),  rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatDate(c ("data_ingresso_cargofuncao","data_ingresso_orgao"),  method="toLocaleDateString")
 ```
 
 A @tbl-dados_duplicados traz um panorama geral dos vínculos duplicados.
@@ -406,12 +450,19 @@ servidores <- left_join(remuneracao ,cadastro  )
 #| label: tbl-funcao_gratificada
 #| tbl-cap: Função Gratificada
 
-servidores %>% filter(nivel_funcao != "-1", org_exercicio == "Universidade Federal de Santa Maria - RS") %>% group_by( funcao, nivel_funcao) %>% summarise(tempo_servico_publico = round(mean(tempo_servico_publico,na.rm = TRUE),1), q=n(), remuneracao = mean(max(remuneracao_basica_bruta_r))) %>% filter(q>100) %>% arrange(desc(q))%>% head(20) %>% kable()
+servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exercicio) %>% summarise(tempo_servico_publico = round(mean(tempo_servico_publico,na.rm = TRUE),1), q=n(), remuneracao = mean(max(remuneracao_basica_bruta_r)))  %>% arrange(desc(q))
+
+datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exercicio) %>% summarise( q=n())%>% adorn_totals()  %>% arrange(desc(q)) , colnames = c("Órgão","Quantidade"), rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound(c("q"), mark = ".", dec.mark = ",",0)
 ```
 
-##### 
-
-```{}
+```{r}
+datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  funcao) %>% summarise( q=n())%>% adorn_totals()  %>% arrange(desc(q)) , colnames = c("Órgão","Quantidade"), rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound(c("q"), mark = ".", dec.mark = ",",0)
 ```
 
 ```{r cargo_tempo}
@@ -446,7 +497,7 @@ datatable( servidores %>% filter(tempo_servico_publico>1) %>% group_by(situacao_
 #| label: tbl-ministros_tempo
 #| tbl-cap: Ministros, tempo de serviço público e duração no cargo
 
-datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% group_by(nome, org_exercicio  ) %>% summarise(tempo_servico_publico = round(tempo_servico_publico,1), tempo_cargo = round(tempo_cargo,1)), colnames = c("Ministro", "Órgão", "Tempo no cargo (anos)", "Tempo de serviço público (anos)"), rownames = FALSE, filter = 'top', options = list(
+datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% group_by(nome, org_exercicio  ) %>% summarise(tempo_servico_publico = round(tempo_servico_publico,1), tempo_cargo = round(tempo_cargo,1)), colnames = c("Ministro", "Órgão", "Tempo no cargo (anos)", "Tempo de serviço público (anos)"), rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) )
@@ -611,22 +662,22 @@ ggplotly(p)
 #| error: false
 #| label: tbl-todos
 #| tbl-cap: todos valores médios por cargo do instituidor da pensão (R$)
-datatable( servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r), medio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )
+datatable( servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) ) %>% formatRound (c("total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 
 
 # servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r)) %>% mutate( medio = valor/q ) %>% arrange(desc(q)) %>% head(20)%>% kable(col.names = c("Cargo","Quantidade", "Valor", "Valor médio"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
 
 ```{r professor}
-datatable( servidores %>% filter(cargo == "PROFESSOR", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r), medio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )
+datatable( servidores %>% filter(cargo == "PROFESSOR", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 ```
 
 ```{r medico}
-datatable( servidores %>% filter(cargo == "MEDICO", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r), medio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )
+datatable( servidores %>% filter(cargo == "MEDICO", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 ```
 
 ```{r analista}
-datatable( servidores %>% filter(cargo == "ANALISTA", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r), medio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )
+datatable( servidores %>% filter(cargo == "ANALISTA", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 ```
 
 ```{r funcao}
