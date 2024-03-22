@@ -37,7 +37,7 @@ library(ggthemes)
 myNumFmt <- as.fmt(digits=0, big.mark=".")
 options(scipen = 999)
 
-options(DT.options = list(pageLength = 10, language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese.json')))
+options(DT.options = list(pageLength = 10, fontSize = "70%", language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese.json')))
 # https://rstudio.github.io/DT/004-i18n.html
 # https://rstudio.github.io/DT/options.html
 # %>% formatCurrency(c('A', 'C')) %>% formatPercentage('D', 2)%>% formatRound('E', 3)
@@ -314,7 +314,7 @@ nao_inclusos <- (setdiff(cadastro %>% select(nome_id),   remuneracao %>% select(
 
 # cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(situacao_vinculo) %>% count() %>% arrange(desc(n)) %>% adorn_totals()  %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
 
-datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(situacao_vinculo) %>% count() %>% adorn_totals() %>% arrange(desc(n)), colnames = c("Vínculo", "Quantidade"), rownames = FALSE, options = list(
+datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id)  %>% group_by(situacao_vinculo) %>% count() %>% adorn_totals() %>% arrange(desc(n)), colnames = c("vínculo", "quantidade"), rownames = FALSE, options = list( 
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
@@ -334,7 +334,7 @@ Destaque para a Empresa Brasileira de Serviços Hospitalares dentre os servidore
  # cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% arrange(desc(n)) %>% head()   %>%  kable(col.names = c("vínculo", "quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
  
  
- datatable(  cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by( org_exercicio) %>% count()%>% adorn_totals() %>% arrange(desc(n)), colnames = c( "Órgão", "Quantidade"), rownames = FALSE, options = list(
+ datatable(  cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo != "Sigiloso")  %>% group_by( org_exercicio) %>% count()%>% adorn_totals() %>% arrange(desc(n)), colnames = c( "órgão", "quantidade"), rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
@@ -352,7 +352,7 @@ Em relação aos dados sigilosos, destaque para os policiais federais (PF e PRF)
 
 
  
- datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo == "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% adorn_totals()%>% arrange(desc(n)), colnames = c("Órgão", "Quantidade"), rownames = FALSE, options = list(
+ datatable( cadastro %>% filter(nome_id %in% nao_inclusos$nome_id) %>% filter(situacao_vinculo == "Sigiloso")  %>% group_by(org_exercicio) %>% count() %>% adorn_totals()%>% arrange(desc(n)), colnames = c("órgão", "quantidade"), rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound("n", 0, mark = ".", dec.mark = "," )
@@ -384,7 +384,7 @@ A @tbl-dados_duplicados traz um panorama geral dos vínculos duplicados.
 #| error: false
 #| label: tbl-dados_duplicados
 #| tbl-cap: Dados cadastrais, múltiplos vínculos
-cadastro %>% filter(nome_id %notin% nao_inclusos$nome_id) %>% filter(nome != "Sigiloso") %>% group_by(nome_id) %>% count()  %>% group_by(n) %>% count()%>% mutate (repetidos = (n-1)*nn) %>% adorn_totals(where = c("row","col"))  %>%  kable(col.names = c("Quantidade de Vínculos", "ocorrências", "vínculos repeditos","Total de vínculos"),format.args = list(big.mark = ".", decimal.mark = ","))
+cadastro %>% filter(nome_id %notin% nao_inclusos$nome_id) %>% filter(nome != "Sigiloso") %>% group_by(nome_id) %>% count()  %>% group_by(n) %>% count()%>% mutate (repetidos = (n-1)*nn) %>% adorn_totals(where = c("row","col"))  %>%  kable(col.names = c("quantidade de vínculos", "ocorrências", "vínculos repeditos","total de vínculos"),format.args = list(big.mark = ".", decimal.mark = ","))
 
 
 
@@ -503,6 +503,15 @@ A partir de agora podemos fazer análises com dados sobre a remuneração e com 
 
 ## Análise dos dados
 
+### Quantitativo por órgão
+
+```{r}
+datatable(servidores %>% filter(nivel_funcao == "-1", orgsup_exercicio != "Sem informação" ) %>% group_by(org_exercicio, uorg_exercicio, cargo) %>% summarise( n = n()) %>% adorn_totals() %>% arrange(desc(n)), filter = 'top', colnames = c( "órgão","uorg" , "cargo", "quantitativo"),  rownames = FALSE, options = list(
+  pageLength = 10,
+  lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
+) ) %>% formatRound (c("n"), mark = ".", dec.mark = ",", 0 )
+```
+
 ### Tempo de serviço público detalhado por vínculo
 
 ```{r tempo_vinculo}
@@ -512,13 +521,13 @@ A partir de agora podemos fazer análises com dados sobre a remuneração e com 
 #| label: tbl-vinculo_tempo
 #| tbl-cap: Tempo de serviço público por tipo de vínculo
 
-datatable( servidores %>% filter(tempo_servico_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)), colnames = c( "Vínculo", "Tempo médio de serviço público", "Tempo máximo de serviço público",  "Quantidade"),  rownames = FALSE, options = list(
+datatable( servidores %>% filter(tempo_servico_publico>1) %>% group_by(situacao_vinculo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)), colnames = c( "vínculo", "tempo médio de serviço público", "tempo máximo de serviço público",  "quantidade"),  rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound (c("trabalho_medio", "maximo","q"), mark = ".", dec.mark = ",", 0 )
 ```
 
-```{}
+```         
 ```
 
 ### Tempo de serviço público detalhado por cargo
@@ -530,13 +539,13 @@ datatable( servidores %>% filter(tempo_servico_publico>1) %>% group_by(situacao_
 #| label: tbl-cargo_tempo
 #| tbl-cap: Tempo de serviço público por cargo
 
-datatable( servidores %>% filter(tempo_servico_publico>0, cargo %notin% c("Sem", "Inválido", "Sigiloso") ) %>% group_by(cargo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) , colnames = c( "Cargo", "Tempo médio de serviço público", "Tempo máximo de serviço público",  "Quantidade"),  rownames = FALSE, options = list(
+datatable( servidores %>% filter(tempo_servico_publico>0, cargo %notin% c("Sem", "Inválido", "Sigiloso") ) %>% group_by(cargo) %>% summarise(trabalho_medio = round(mean(tempo_servico_publico, na.rm = TRUE),1),maximo = round(max(tempo_servico_publico),1),  q=n())  %>% arrange(desc(trabalho_medio)) , colnames = c( "cargo", "tempo médio de serviço público", "tempo máximo de serviço público",  "quantidade"),  rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound (c("trabalho_medio", "maximo","q"), mark = ".", dec.mark = ",", 0 )
 ```
 
-### Valores e quantidade de beneficiários
+### Maior remuneração individual
 
 ```{r maior_individual}
 
@@ -547,11 +556,13 @@ datatable( servidores %>% filter(tempo_servico_publico>0, cargo %notin% c("Sem",
 #| tbl-cap: Maiores remunerações no mês
 
 
-servidores  %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_basica_bruta_r))) %>% arrange(desc(valor)) %>% head() %>% kable(col.names = c("benficiário", "valor (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
+servidores  %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_basica_bruta_r))) %>% arrange(desc(valor)) %>% head() %>% kable(col.names = c("servidor", "valor (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
 id_maior <-  as.character( servidores  %>% group_by(  id_servidor_portal) %>% summarise(valor = max((remuneracao_basica_bruta_r))) %>% arrange(desc(valor)) %>% head(1) %>% select(id_servidor_portal))
 ```
 
-### Maiores valores por cargo
+![](servidores/servidores/maior_remuneracao_servidor.png){#fig-maior_remuneracao_servidor}
+
+### Cargos detalhados por quantitativo e remuneração (total, média e maior)
 
 ```{r remuneracao}
 #| warning: false
@@ -559,7 +570,7 @@ id_maior <-  as.character( servidores  %>% group_by(  id_servidor_portal) %>% su
 #| error: false
 #| label: tbl-todos
 #| tbl-cap: todos valores médios por cargo do instituidor da pensão (R$)
-datatable( servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) , colnames = c( "Cargo","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
+datatable( servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) , colnames = c( "cargo","quantidade", "remuneração total", "remuneração média", "maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 
 # servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(cargo )    %>% summarise(q = n(),valor =sum(remuneracao_basica_bruta_r)) %>% mutate( medio = valor/q ) %>% arrange(desc(q)) %>% head(20)%>% kable(col.names = c("Cargo","Quantidade", "Valor", "Valor médio"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
 ```
@@ -567,22 +578,22 @@ datatable( servidores %>% filter(descricao_cargo %notin% c("Inválido","Sem info
 #### Cargo professor
 
 ```{r professor}
-datatable( servidores %>% filter(cargo == "PROFESSOR", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q))  , colnames = c( "Cargo detalhado","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
+datatable( servidores %>% filter(cargo == "PROFESSOR", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q))  , colnames = c( "cargo detalhado","quantidade", "remuneração total", "remuneração média", "maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 ```
 
 #### Cargo médico
 
 ```{r medico}
-datatable( servidores %>% filter(cargo == "MEDICO", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) , colnames = c( "Cargo detalhado","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
+datatable( servidores %>% filter(cargo == "MEDICO", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)) , colnames = c( "cargo detalhado","quantidade", "remuneração total", "remuneração média", "maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 ```
 
 #### Cargo analista
 
 ```{r analista}
-datatable( servidores %>% filter(cargo == "ANALISTA", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)), colnames = c( "Cargo detalhado","Quantidade", "Remuneração total", "Remuneração média", "Maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
+datatable( servidores %>% filter(cargo == "ANALISTA", descricao_cargo %notin% c("Inválido","Sem informaç"))%>% group_by(descricao_cargo )    %>% summarise(q = n(),total =sum(remuneracao_basica_bruta_r), médio = mean(remuneracao_basica_bruta_r), maior = max(remuneracao_basica_bruta_r))  %>%  arrange(desc(q)), colnames = c( "cargo detalhado","quantidade", "remuneração total", "remuneração média", "maior remuneração"), rownames = FALSE )%>% formatRound (c("q", "total", "médio","maior"), mark = ".", dec.mark = ",", 0 )
 ```
 
-### Função 
+### Função
 
 ```{r funcao_gratificada_orgao}
 #| warning: false
@@ -592,7 +603,7 @@ datatable( servidores %>% filter(cargo == "ANALISTA", descricao_cargo %notin% c(
 #| tbl-cap: Função Gratificada
 
 
-datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exercicio) %>% summarise( q=n())%>% adorn_totals()  %>% arrange(desc(q)) , colnames = c("Órgão","Quantidade"), rownames = FALSE, options = list(
+datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exercicio) %>% summarise( q=n())%>% adorn_totals()  %>% arrange(desc(q)) , colnames = c("órgão","quantidade"), rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) ) %>% formatRound(c("q"), mark = ".", dec.mark = ",",0)
@@ -607,7 +618,7 @@ datatable( servidores %>% filter(nivel_funcao != "-1") %>% group_by(  org_exerci
 #| label: tbl-ministros_tempo
 #| tbl-cap: Ministros, tempo de serviço público e duração no cargo
 
-datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% group_by(nome, org_exercicio  ) %>% summarise(tempo_servico_publico = round(tempo_servico_publico,1), tempo_cargo = round(tempo_cargo,1)), colnames = c("Ministro", "Órgão", "Tempo no cargo (anos)", "Tempo de serviço público (anos)"), rownames = FALSE, options = list(
+datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% group_by(nome, org_exercicio  ) %>% summarise(tempo_servico_publico = round(tempo_servico_publico,1), tempo_cargo = round(tempo_cargo,1)), colnames = c("ministro", "órgão", "tempo no cargo (anos)", "tempo de serviço público (anos)"), rownames = FALSE, options = list(
   pageLength = 10,
   lengthMenu = c(10, 25,50), autoWidth = TRUE, keys = TRUE
 ) )
@@ -615,73 +626,43 @@ datatable( servidores %>% filter( startsWith(cargo, "MINISTRO DE ESTADO")) %>% g
 
 ### Adminissões ao longo do tempo
 
-```{r plot_presidente}
+```{r df_plot}
 #https://bookdown.dongzhuoer.com/hadley/ggplot2-book/custom-annotations
 
-
-
-
-
 df_plot <- servidores %>% mutate(ano = floor_date(data_diploma_ingresso_servicopublico, "year"))  %>% group_by(ano)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n()) %>% mutate (etiqueta = paste0(year(ano),": ", Format(n, fmt = myNumFmt)," ingressos"))%>% drop_na()  
-
-
 
 presidentes <- read_excel("presidentes.xlsx", 
                           col_types = c("text","date", "date", "date", "text", "text"))  %>% mutate(cor = fct_reorder(cor, party), presidencia =  interval(start, end) , regra = paste0("ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('",start, "'),ymd('", end, "'))","~", "'", name, "',"))
 
-df_plot_agregado <- servidores  %>% group_by( data_diploma_ingresso_servicopublico)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n())%>% drop_na() %>% mutate(presidente = case_when(
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1964-04-15'),ymd('1985-03-15'))~'Militares',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1985-03-15'),ymd('1990-03-15'))~'Sarney',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1990-03-15'),ymd('1992-12-29'))~'Collor',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1992-12-29'),ymd('1995-01-01'))~'Itamar',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1995-01-01'),ymd('2002-12-31'))~'FHC',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2003-01-01'),ymd('2010-12-31'))~'Lula',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2011-01-01'),ymd('2016-08-31'))~'Dilma',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2016-08-31'),ymd('2018-12-31'))~'Temer',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2019-01-01'),ymd('2022-12-31'))~'Bolsonaro',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'Lula'  ,
- .default = "Antes de 1964"),
- partido = case_when(
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1964-04-15'),ymd('1985-03-15'))~'Militares',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1985-03-15'),ymd('1990-03-15'))~'PMDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1990-03-15'),ymd('1992-12-29'))~'PRN',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1992-12-29'),ymd('1995-01-01'))~'PMDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1995-01-01'),ymd('2002-12-31'))~'PSDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2003-01-01'),ymd('2010-12-31'))~'PT',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2011-01-01'),ymd('2016-08-31'))~'PT',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2016-08-31'),ymd('2018-12-31'))~'PMDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2019-01-01'),ymd('2022-12-31'))~'PL',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'PT'  ,
- .default = "Antes de 1964"))  
+
+df_plot_agregado <- servidores  %>% group_by( data_diploma_ingresso_servicopublico)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n())%>% drop_na() %>% mutate(presidente_partido = case_when(
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1964-04-15'),ymd('1985-03-15'))~'Militares - Arena',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1985-03-15'),ymd('1990-03-15'))~'Sarney - PMDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1990-03-15'),ymd('1992-12-29'))~'Collor - PRN',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1992-12-29'),ymd('1995-01-01'))~'Itamar - PMDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1995-01-01'),ymd('2002-12-31'))~'FHC - PSDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2003-01-01'),ymd('2010-12-31'))~'Lula - PT',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2011-01-01'),ymd('2016-08-31'))~'Dilma - PT',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2016-08-31'),ymd('2018-12-31'))~'Temer - PMDB',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2019-01-01'),ymd('2022-12-31'))~'Bolsonaro - PL',
+ ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'Lula - PT'  ,
+ .default = "Antes de 1964 - Antes de 1964")
+ )
+
+df_plot_agregado [(c("presidente", "partido"))] <- str_split_fixed(df_plot_agregado$presidente_partido, " - ",2)
 
 
-df_plot_agregado_2 <- servidores %>% filter(data_diploma_ingresso_servicopublico > "1995-01-01", cargo %in% c("MEDICO", "PROFESSOR", "AUDITOR", "ANALISTA", "TECNICO", "ASSISTENTE", "AGENTE", "ESPECIALISTA", "TECNOLOGO", "PESQUISADOR", "PERITO", "GUARDA", "CONTADOR","AUXILIAR", "ADMINISTRADOR", "PROCURADOR", "ENGENHEIRO","ENFERMEIRO")) %>% group_by( data_diploma_ingresso_servicopublico, cargo)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n())%>% drop_na() %>% mutate(presidente = case_when(
-  ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1995-01-01'),ymd('2002-12-31'))~'FHC',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2003-01-01'),ymd('2010-12-31'))~'Lula',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2011-01-01'),ymd('2016-08-31'))~'Dilma',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2016-08-31'),ymd('2018-12-31'))~'Temer',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2019-01-01'),ymd('2022-12-31'))~'Bolsonaro',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'Lula'  ,
- .default = "Antes de 1964"),
- partido = case_when(
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1964-04-15'),ymd('1985-03-15'))~'Militares',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1985-03-15'),ymd('1990-03-15'))~'PMDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1990-03-15'),ymd('1992-12-29'))~'PRN',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1992-12-29'),ymd('1995-01-01'))~'PMDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('1995-01-01'),ymd('2002-12-31'))~'PSDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2003-01-01'),ymd('2010-12-31'))~'PT',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2011-01-01'),ymd('2016-08-31'))~'PT',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2016-08-31'),ymd('2018-12-31'))~'PMDB',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2019-01-01'),ymd('2022-12-31'))~'PL',
- ymd (data_diploma_ingresso_servicopublico) %within%  interval(ymd('2023-01-01'),ymd('2025-03-07'))~'PT'  ,
- .default = "Antes de 1995"))  
+```
 
+ 
 
+```{r df_agregado}
 df_plot_agregado%>% group_by(partido) %>% summarise(q = sum(n))%>% mutate(participacao = q/sum(q)*100) %>% arrange(desc(q)) %>% kable(digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
+```
 
-
-df_plot_agregado_2%>% group_by(partido, cargo) %>% summarise(q = sum(n))%>% mutate(participacao = q/sum(q)*100) %>% arrange(desc(q)) %>% kable(digits = 1, format.args = list(big.mark = ".", decimal.mark = ","))
-
+```{r plot_presidente }
+#| warning: false
+#| column: page
 
 p <- ggplot(df_plot) + 
   geom_rect(
@@ -698,25 +679,19 @@ p <- ggplot(df_plot) +
   geom_text(
     aes(x = texto, y = max (df_plot$n)*1.3, label = name), 
     data = presidentes, 
-    size = 1.5
+    size = 3
   ) + 
    geom_col(aes(ano %m+% months (6),  n, label= paste0( etiqueta))) +
   xlab("data") + 
   ylab("servidores admitidos")+
   theme_clean  ()+ theme(legend.position="none")
 ggplotly(p)
-
-
 ```
 
-### Maiores valores médios por cargo do instituidor da pensão
+## Considerações finais
 
-1.  qual é a defasagem temporal entre a solicitação e a concessão do benefício previdenciário.
+1.   Precisamos tormar cuidado com as análises temporais devido às alterações nas nomenclaturas dos cargos e/ou órgãos e também pela grande quatidade de dados ausentes para as datas de ingresso no serviço público, órgão e cargo. (@tbl-alteracao_nome_ministerio , @tbl-NA_datas)
 
-2.  os motivos dos dados sigilosos na tabele cadastro
+2.  Trabalhamos com a remuneração bruta, logo desconsideramos o abate-teto, deduções, tributação... Atenção especial para os servidores com mais de um vínculo, pois, dependendo da organização dos dados, os valores podem vir dobrados.
 
-Seria interessante se a base de dados disponibilizasse:
-
-1.  Data nascimento e óbito do instituidor da pensão
-
-2.  Data de nascimento do beneficiário da pensão
+3.  Seria interessante ter os códigos das uorgs para organizar melhor os dados.
