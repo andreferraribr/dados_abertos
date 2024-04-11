@@ -690,7 +690,7 @@ ggplotly(p)
 
 ## Considerações finais
 
-1.   Precisamos tormar cuidado com as análises temporais devido às alterações nas nomenclaturas dos cargos e/ou órgãos e também pela grande quatidade de dados ausentes para as datas de ingresso no serviço público, órgão e cargo. (@tbl-alteracao_nome_ministerio , @tbl-NA_datas)
+1.  Precisamos tormar cuidado com as análises temporais devido às alterações nas nomenclaturas dos cargos e/ou órgãos e também pela grande quatidade de dados ausentes para as datas de ingresso no serviço público, órgão e cargo. (@tbl-alteracao_nome_ministerio , @tbl-NA_datas)
 
 2.  Trabalhamos com a remuneração bruta, logo desconsideramos o abate-teto, deduções, tributação... Atenção especial para os servidores com mais de um vínculo, pois, dependendo da organização dos dados, os valores podem vir dobrados.
 

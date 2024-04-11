@@ -1,0 +1,634 @@
+---
+title: "Pensionistas Siape"
+editor: visual
+lang: "pt"
+format:
+  # docx: default
+  html:
+    code-fold: true
+    code-summary: "mostrar o código"
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| warning: false
+#| message: false
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(purrr)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(deflateBR)
+library(DescTools)
+library(zoo)
+library(stringr)
+library(DT)
+library(stringr)
+library(scales)
+library(ggthemes)
+
+`%notin%` <- Negate(`%in%`)
+myNumFmt <- as.fmt(digits=0, big.mark=".")
+options(scipen = 999)
+options(DT.options = list(pageLength = 10, fontSize = "70%", language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese.json')))
+```
+
+## Introdução
+
+Os dados sobre os pensionistas estão em duas bases distintas: cadastro e remuneração. A tabela cadastro foca nos dados do instituidor da pensão (cpf, cargo, tipo da pensão, data de início da pensão...), enquanto a tabela remuneração traz detalhes sobre os valores dos benefícios.
+
+Uma vez que ambas as tabelas contém os dados do beneficiários da pensão, nós vinculamos as duas tabelas a partir destes dados. Tomanos cuidados especiais com dados ausentes e duplicados.
+
+Após associar as tabelas foi possível analisar os pagamentos das pensões, por exemplo, por início do ano da pensão, pelo cargo do instituidor da pensão e pelo tipo da pensão.
+
+## Tratamento dos dados
+
+### Tabela Cadastro
+
+```{r}
+
+pensionistas_siape_cadastro <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Cadastro.csv", 
+    delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        decimal_mark = ",", grouping_mark = ".", 
+        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names()%>% mutate(nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
+
+pensionistas_siape_cadastro <- pensionistas_siape_cadastro
+```
+
+#### Organizar datas e períodos
+
+```{r}
+pensionistas_siape_cadastro <- pensionistas_siape_cadastro%>% mutate( data_inicio_pensao = parse_date_time(data_inicio_pensao,"dmy"), data_ingresso_cargofuncao_instituidor_pensao= parse_date_time(data_ingresso_cargofuncao_instituidor_pensao,"dmy") , data_diploma_ingresso_servicopublico_instituidor_pensao= parse_date_time(data_diploma_ingresso_servicopublico_instituidor_pensao,"dmy"), data_ingresso_orgao_instituidor_pensao = parse_date_time(data_ingresso_orgao_instituidor_pensao,"dmy"),inicio_cargo = year(data_ingresso_cargofuncao_instituidor_pensao), inicio_servico_publico = year(data_diploma_ingresso_servicopublico_instituidor_pensao), inicio_orgao = year(data_ingresso_orgao_instituidor_pensao),inicio_pensao = year(data_inicio_pensao ),tempo_setor_publico= time_length(difftime("2024-01-31" ,data_diploma_ingresso_servicopublico_instituidor_pensao ), "years"), tempo_cargo= time_length(difftime("2024-01-31" ,data_ingresso_cargofuncao_instituidor_pensao ), "years") )
+
+```
+
+#### Consolidadar cargos
+
+```{r}
+
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-cargo_x_cargo_descricao
+#| tbl-cap: Consolidação dos cargos
+
+
+
+pensionistas_siape_cadastro <- pensionistas_siape_cadastro %>%  mutate(descricao_01 = case_when(
+startsWith(descricao_cargo_instituidor_pensao, "ASG - ") ~ str_remove_all(descricao_cargo_instituidor_pensao, "ASG - "),
+startsWith(descricao_cargo_instituidor_pensao, "ATA") ~ str_remove_all(descricao_cargo_instituidor_pensao, "ATA "),
+startsWith(descricao_cargo_instituidor_pensao, "ATA-") ~ str_remove_all(descricao_cargo_instituidor_pensao, "ATA-"),
+startsWith(descricao_cargo_instituidor_pensao, "ATA - ") ~ str_remove_all(descricao_cargo_instituidor_pensao, "ATA - "),
+startsWith(descricao_cargo_instituidor_pensao, "ATA - TECNICO") ~  "TECNICO",
+startsWith(descricao_cargo_instituidor_pensao, "ATA - PROGRAMADOR") ~ "PROGRAMADOR",
+startsWith(descricao_cargo_instituidor_pensao, "ASO-") ~  str_remove_all(descricao_cargo_instituidor_pensao, "ASO-"),
+startsWith(descricao_cargo_instituidor_pensao, "TNS - ") ~  str_remove_all(descricao_cargo_instituidor_pensao, "TNS - "),
+startsWith(descricao_cargo_instituidor_pensao, "TNS-") ~  str_remove_all(descricao_cargo_instituidor_pensao, "TNS-"),
+startsWith(descricao_cargo_instituidor_pensao, "TNS-") ~  str_remove_all(descricao_cargo_instituidor_pensao, "TNS-"),
+startsWith(descricao_cargo_instituidor_pensao, "ASM-") ~  str_remove_all(descricao_cargo_instituidor_pensao, "ASM-"),
+startsWith(descricao_cargo_instituidor_pensao, "ASM-") ~  str_remove_all(descricao_cargo_instituidor_pensao, "ASM-"),
+startsWith(descricao_cargo_instituidor_pensao, "TEM ") ~  str_remove_all(descricao_cargo_instituidor_pensao, "TEM "),
+startsWith(descricao_cargo_instituidor_pensao, "TEC ") ~  "TECNICO",
+startsWith(descricao_cargo_instituidor_pensao, "TNS ") ~  str_remove_all(descricao_cargo_instituidor_pensao, "TNS "),
+startsWith(descricao_cargo_instituidor_pensao, "TIn ") ~  str_remove_all(descricao_cargo_instituidor_pensao, "TIn "),
+startsWith(descricao_cargo_instituidor_pensao, "PROIND - ") ~  str_remove_all(descricao_cargo_instituidor_pensao, "PROIND - "),
+startsWith(descricao_cargo_instituidor_pensao, "PROSAL - ") ~  str_remove_all(descricao_cargo_instituidor_pensao, "PROSAL - "),
+startsWith(descricao_cargo_instituidor_pensao, "PROESU - ") ~  str_remove_all(descricao_cargo_instituidor_pensao, "PROESU - "),
+startsWith(descricao_cargo_instituidor_pensao, "PROF ") ~  "PROFESSOR",
+.default = descricao_cargo_instituidor_pensao))
+
+
+pensionistas_siape_cadastro <- pensionistas_siape_cadastro %>% mutate( descricao_01 =str_replace (  descricao_01, "-", " "), cargo_termo =word ( descricao_01 ,1))
+
+
+
+pensionistas_siape_cadastro <- pensionistas_siape_cadastro %>% mutate(cargo = case_when(
+  startsWith(descricao_cargo_instituidor_pensao,   "AAD")~ "AUXILIAR",
+  startsWith(descricao_cargo_instituidor_pensao,   "AUX")~ "AUXILIAR",
+  startsWith(descricao_cargo_instituidor_pensao,   "AUG")~ "AUXILIAR",
+  str_detect(descricao_cargo_instituidor_pensao,   "AUXILIAR DE")~ "AUXILIAR",
+  startsWith(descricao_cargo_instituidor_pensao, "AG ")~ "AGENTE",
+  startsWith(descricao_cargo_instituidor_pensao, "AG ")~ "AGENTE",
+  str_detect(descricao_cargo_instituidor_pensao, "ANALI")~ "ANALISTA",
+  
+  str_detect(descricao_cargo_instituidor_pensao, "TSE-")~ "TECNICO",
+  str_detect(descricao_cargo_instituidor_pensao, "EMPREGADO SERPRO")~ "EMPREGADO SERPRO",
+  str_detect(descricao_cargo_instituidor_pensao, "ENGENHEIRO-AREA")~ "ENGENHEIRO",
+  str_detect(descricao_cargo_instituidor_pensao, "FARMACEUTICO-")~ "FARMACEUTICO",
+  str_detect(descricao_cargo_instituidor_pensao, "FARMECEUTICO-")~ "FARMACEUTICO",
+  str_detect(descricao_cargo_instituidor_pensao, "ASSIST")~ "ASSISTENTE",
+  str_detect(descricao_cargo_instituidor_pensao, "VETERINARIO")~ "VETERINARIO",
+  str_detect(descricao_cargo_instituidor_pensao, "ESP EM")~ "ESPECIALISTA",
+  str_detect(descricao_cargo_instituidor_pensao, "ESP REG")~ "ESPECIALISTA",
+  str_detect(descricao_cargo_instituidor_pensao, "ESP POL")~ "ESPECIALISTA",
+  str_detect(descricao_cargo_instituidor_pensao, "ATD-MS")~ "EQUIPE HOSPITALAR",
+  startsWith(descricao_cargo_instituidor_pensao, "TECNOL")~ "TECNOLOGO",
+  startsWith(descricao_cargo_instituidor_pensao, "ATA - TECNICO")~ "TECNICO",
+  str_detect(descricao_cargo_instituidor_pensao, "-TECNICO")~ "TECNICO",
+  startsWith(descricao_cargo_instituidor_pensao, "ATA - PROGRAMADOR")~ "PROGRAMADOR",
+  startsWith(descricao_cargo_instituidor_pensao, "MEDICINA")~ "MEDICO",
+  startsWith(descricao_cargo_instituidor_pensao, "ENFERMAGEM")~ "ENFERMEIRO",
+  startsWith(descricao_cargo_instituidor_pensao, "RELACOES PUBLICAS")~ "RELACOES PUBLICAS",
+  startsWith(descricao_cargo_instituidor_pensao, "ESPEC ")~ "ESPECIALISTA",
+  startsWith(descricao_01, "PRIMEIRO")~ descricao_01,
+  startsWith(descricao_01, "SEGUNDO")~ descricao_01,
+  startsWith(descricao_01, "MINISTRO")~ descricao_cargo_instituidor_pensao,
+  startsWith(descricao_cargo_instituidor_pensao, "OP ")~ "OPERADOR",
+  startsWith(descricao_cargo_instituidor_pensao, "ARTIF")~ "ARTIFICE",
+  startsWith(descricao_cargo_instituidor_pensao, "AUD FEDERAL")~ "AUDITOR",
+  startsWith(descricao_cargo_instituidor_pensao, "CUX")~ descricao_01,
+  startsWith(descricao_01, "ASSIT")~ "ASSISTENTE",
+  startsWith(descricao_cargo_instituidor_pensao, "ATO -")~ "ASSISTENTE",
+  startsWith(descricao_cargo_instituidor_pensao, "CALDEREIRO")~ "CALDEIREIRO",
+  startsWith(descricao_cargo_instituidor_pensao, "CENOTECNICA")~ "CENOTECNICO",
+  startsWith(descricao_cargo_instituidor_pensao, "CINEGRAFIA")~ "CINEGRAFISTA",
+  startsWith(descricao_cargo_instituidor_pensao, "CONTRA REGRA")~ "CONTRA REGRA",
+  startsWith(descricao_cargo_instituidor_pensao, "CONTRA MESTRE")~ "CONTRA MESTRE",
+  startsWith(descricao_cargo_instituidor_pensao, "COMPRADORA")~ "COMPRADOR",
+  startsWith(descricao_cargo_instituidor_pensao, "PEDAGOGA")~ "PEDAGOGO",
+  startsWith(descricao_cargo_instituidor_pensao, "RECREADORA")~ "RECREADOR",
+   startsWith(descricao_cargo_instituidor_pensao, "PROD EXEC TV - RADIO E MIDIAS DIGITAIS")~ "PRODUTOR EXEC TV - RADIO E MIDIAS DIGITAIS",
+  startsWith(descricao_cargo_instituidor_pensao, "CONDUCAO")~ "MOTORISTA",
+  startsWith(descricao_cargo_instituidor_pensao, "PROFIS TEC ESPEC LINGUAGEM SINAIS")~ "ESPECIALISTA LINGUAGEM SINAIS",
+  startsWith(descricao_cargo_instituidor_pensao, "COORDEN")~ "COORDENADOR",
+  startsWith(descricao_cargo_instituidor_pensao, "PROFIS DE NIVEL OPERACIONAL")~ "APOIO",
+  startsWith(descricao_cargo_instituidor_pensao, "PROFIS DE EDUCACAO FISICA")~ "PROFISSIONAL DE EDUCACAO FISICA",
+  startsWith(descricao_cargo_instituidor_pensao, "OF ARTES GRAFICAS")~ "OF ARTES GRAFICAS",
+  startsWith(descricao_cargo_instituidor_pensao, "OF MANUTENCAO")~ "OF MANUTENCAO",
+  startsWith(descricao_cargo_instituidor_pensao, "COZINHEIRA")~ "COZINHEIRO",
+  startsWith(descricao_cargo_instituidor_pensao, "TERCEIRO")~ descricao_cargo_instituidor_pensao,
+  startsWith(descricao_01, "CONTRA REGRA")~ "CONTRA-REGRA",
+  startsWith(descricao_cargo_instituidor_pensao, "CONTRAMESTRE")~ "CONTRA-MESTRE",
+  startsWith(descricao_cargo_instituidor_pensao, "ECONOMO")~ "ECONOMISTA",
+  startsWith(descricao_cargo_instituidor_pensao, "T P ECONOMIA III")~ "ECONOMISTA",
+  startsWith(descricao_cargo_instituidor_pensao, "PROG APLICACOES III")~ "PROGRAMADOR",
+  startsWith(descricao_cargo_instituidor_pensao, "T ASS ADM")~ "TECNICO",
+  startsWith(descricao_cargo_instituidor_pensao, "OPER ESPECIALIZADO")~ "OPERADOR",
+  startsWith(descricao_cargo_instituidor_pensao, "MEDICO VETERINARIO")~ descricao_cargo_instituidor_pensao,
+  startsWith(descricao_cargo_instituidor_pensao, "PROGAMADOR")~ "PROGRAMADOR",
+  startsWith(descricao_cargo_instituidor_pensao, "ESTATISTICA")~ "ESTATISTICO",
+  startsWith(descricao_cargo_instituidor_pensao, "PROF SERV OPERACIONAIS")~"SERVICOS OPERACIONAIS IV",
+  startsWith(descricao_cargo_instituidor_pensao, "CARGO EM EXTINCAO")~ "CARGO EM EXTINCAO",
+  startsWith(descricao_cargo_instituidor_pensao, "SALVA-VIDAS")~ "SALVA-VIDAS",
+  startsWith(descricao_cargo_instituidor_pensao, "FISC")~ "FISCAL",
+  startsWith(descricao_cargo_instituidor_pensao, "VICE-PRESIDENTE DA REPUBLICA")~ "VICE-PRESIDENTE DA REPUBLICA",
+  startsWith(descricao_cargo_instituidor_pensao, "PRESIDENTE DA REPUBLICA")~"PRESIDENTE DA REPUBLICA",
+  startsWith(descricao_cargo_instituidor_pensao, "JORNALISMO")~ "JORNALISTA",
+  startsWith(descricao_cargo_instituidor_pensao, "VISITADOR SANITARIO")~ "VISITADOR SANITARIO",
+  startsWith(descricao_cargo_instituidor_pensao, "MAQ AUXLIAR ")~ "AUXILIAR",
+  startsWith(descricao_cargo_instituidor_pensao, "INSP")~ "INSPETOR",
+  startsWith(descricao_cargo_instituidor_pensao, "MOCO DE MAQUINAS")~ "MOÇO DE MAQUINAS",
+  startsWith(descricao_cargo_instituidor_pensao, "ASO-ASSI")~ "ASSISTENTE",
+  startsWith(descricao_cargo_instituidor_pensao, "ENGENHARIA DE SOFTWARE")~ "ENGENHEIRO",
+  str_detect(descricao_cargo_instituidor_pensao, "ADMINISTRADOR") | startsWith(descricao_cargo_instituidor_pensao, "ADMINISTRACAO " )~ "ADMINISTRADOR",
+  descricao_cargo_instituidor_pensao %in% c("MDT-MEDICO","MEDICO-AREA","MDT-MEDICO DO TRABALHO") ~ "MEDICO",
+  .default = cargo_termo))
+
+
+tabela_cargos <- data.frame(atributo = c("cargo","cargo_descricao"),
+  quantidade= c(length(unique(pensionistas_siape_cadastro$cargo)),length(unique(pensionistas_siape_cadastro$descricao_cargo_instituidor_pensao)))) 
+
+tabela_cargos%>% kable(col.names = c("atributo","quantidade de registros únicos"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+
+```
+
+#### Atributo nome_id
+
+Criamos o atributo *nome_id* a partir da junção das quatro primeiras letras do nome do beneficiário e o código ID para ter uma camada adicional de proteção ao dados pessoais dos beneficiários.
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-nome_id_03
+#| tbl-cap: Novo atributo (nome_id)
+pensionistas_siape_cadastro %>% filter(!str_detect(nome,"PENSIONISTA")) %>% select( nome_id) %>% head() %>% kable()
+```
+
+```{r}
+
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-nome_id_menor
+#| tbl-cap: Novo atributo (nome_id para menores de 16 anos)
+pensionistas_siape_cadastro %>% filter(str_detect(nome,"PENSIONISTA")) %>% select(nome, id_servidor_portal, nome_id) %>% head() %>% kable()
+```
+
+```         
+```
+
+```         
+```
+
+### Tabela Remuneração
+
+```{r}
+pensionistas_siape_remuneracao <- read_delim("servidores/servidores/pos_2020/pensionistas_siape/202401_Remuneracao.csv", 
+    delim = ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        decimal_mark = ",", grouping_mark = ".", 
+        encoding = "Latin1"), trim_ws = TRUE) %>% clean_names() %>% mutate( nome_id = str_c(str_sub(nome, start = 1L, end = 4L), " - ",id_servidor_portal))
+
+
+pensionistas_siape_remuneracao <- pensionistas_siape_remuneracao%>% select(ano,mes,id_servidor_portal, nome, cpf, nome_id, remuneracao_basica_bruta_r,remuneracao_apos_deducoes_obrigatorias_r)
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-linha_observacao
+#| tbl-cap: Linha de observação na base de dados
+pensionistas_siape_remuneracao %>% filter(startsWith(ano, "(*) Verbas indenizatórias são as parcelas indenizatórias")) %>% group_by(ano) %>% count() %>% kable()
+
+
+pensionistas_siape_remuneracao <- pensionistas_siape_remuneracao %>% filter(!startsWith(ano, "(*) Verbas indenizatórias são as parcelas indenizatórias"))
+```
+
+### Cuidados antes de associar as tabelas
+
+#### Dados ausentes
+
+Quando consultamos o Portal da Transparência é possível identificar o beneficiário e o valor recebido.
+
+Contudo, no caso dos beneficiários sob sigilo, inexiste vínculo entre o instituidor da pensão (cadastro) e o beneficiário (remuneração). Logo, os beneficiários sob sigilo não aparecem na base de dados da remuneração, inviabilizando qualquer consulta ao Portal da Transparência.
+
+Além dos dados sigilosos, há dois beneficiários registrados na tabela cadastro que não constam na tabela remuneração. Consultamos o Portal da Transparência e localizamos os beneficiários. Todavia, as pesquisas retornaram apenas os dados cadastrais e não trouxeram a informação de pagamento.
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-beneficiario_ausente_base_remuneracao
+#| tbl-cap: Beneficiários ausentes na base de dados da remuneração
+
+pensionistas_siape_cadastro %>% filter(nome_id %in% 
+    (setdiff(pensionistas_siape_cadastro %>% select(nome_id),   pensionistas_siape_remuneracao %>% select(nome_id)) )$nome_id) %>%
+  group_by(nome_id) %>% count() %>% adorn_totals() %>% kable()
+```
+
+#### Dados duplicados {#sec-dados_duplicados}
+
+A tabela com os dados cadastrais tem `r  Format((nrow(pensionistas_siape_cadastro)-nrow(pensionistas_siape_remuneracao)), fmt = myNumFmt)` linhas a mais que a tabela com os dados de remuneração.
+
+A diferença de `r  Format((nrow(pensionistas_siape_cadastro)-nrow(pensionistas_siape_remuneracao)), fmt = myNumFmt)` registros entre as bases de dados é resultado dos `r  Format(sum((pensionistas_siape_cadastro %>% filter(nome_id != "Sigi - -11" ) %>% group_by(nome_id) %>% count() %>% group_by(n) %>% count() %>% mutate (repetidos = (n-1)*nn))$repetidos), fmt = myNumFmt)` beneficiários que recebem mais de um benefício @tbl-dados_duplicados_base_cadastro e dos `r  nrow(pensionistas_siape_cadastro %>% filter(nome_id %in% (setdiff(pensionistas_siape_cadastro %>% select(nome_id),   pensionistas_siape_remuneracao %>% select(nome_id)) )$nome_id) %>% group_by(nome_id))` registros que estão no cadastro, mas não estão na base de dados da remuneração. @tbl-beneficiario_ausente_base_remuneracao
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-dados_duplicados_base_cadastro
+#| tbl-cap: Dados duplicados na base de dados de cadastro
+pensionistas_siape_cadastro %>% filter(nome_id != "Sigi - -11" ) %>% group_by(nome_id) %>% count() %>% group_by(n) %>% count() %>% mutate (repetidos = (n-1)*nn) %>%adorn_totals() %>% kable(col.names = c("quantidade de benefícios","ocorrências", "repeditos"), format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+```
+
+### Resultado da associação das tabelas: "tabela_pensionista_siape"
+
+```{r}
+tabela_pensionista_siape <- left_join(pensionistas_siape_remuneracao ,pensionistas_siape_cadastro  )
+
+
+tabela_pensionista_siape <- tabela_pensionista_siape %>% mutate( tempo_usufruto_pensao = time_length(difftime(today(),tabela_pensionista_siape$data_inicio_pensao  ), "years"), proporcao = round(tempo_usufruto_pensao/(tempo_setor_publico+tempo_usufruto_pensao)*100,1))
+
+
+
+
+
+
+
+
+
+
+```
+
+A tabela mesclada (pensionistas) também tem `r  Format((nrow(pensionistas_siape_cadastro)-nrow(pensionistas_siape_remuneracao)), fmt = myNumFmt)` que a base de dados da remuneração. A diferença é explicada da mesma maneira que a diferença entre a base de dados do cadastro e da remuneração. @sec-dados_duplicados
+
+```         
+```
+
+```{r}
+tabela_pensionista_siape %>% filter(tempo_setor_publico>1) %>% group_by(tipo_pensao) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_usufruto_pensao = round(mean(tempo_usufruto_pensao, na.rm = TRUE),1), q=n()) %>% filter(q>100) %>% arrange((tempo_usufruto_pensao))%>% head(20) %>%  kable(col.names = c("tipo de pensão", "tempo de comtribuição", "tempo de usufruto da pensão","quantidade"),format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+```
+
+##### Comparando valores
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-df_valores_duplicados
+#| tbl-cap: Comparando valores
+
+
+valores <- c(
+  
+  as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+  
+ as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r) %>% unique() %>% group_by(nome_id) %>% summarise(valor = sum(remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+ 
+  as.numeric(tabela_pensionista_siape %>% select(nome_id, remuneracao_apos_deducoes_obrigatorias_r)  %>% group_by(nome_id) %>% summarise(valor = sum(max(remuneracao_apos_deducoes_obrigatorias_r), na.rm = TRUE)) %>% summarise(valor = sum(valor))),
+ 
+ sum(pensionistas_siape_remuneracao$remuneracao_apos_deducoes_obrigatorias_r, na.rm = TRUE)
+  
+  )
+
+fonte <- c("tabela pensionista", "pensionista_unique" , "pensionista_max","tabela remuneração" )
+
+calculo <- data.frame(fonte,valores)
+
+calculo %>% kable( col.names = c("fonte", "valor (R$)"),format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+## Análise dos dados
+
+### Maiores benefícios
+
+```{r}
+
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-maiores_remuneracoes
+#| tbl-cap: Maiores remunerações no mês
+
+
+tabela_pensionista_siape  %>% group_by(  nome_id) %>% summarise(valor = max((remuneracao_apos_deducoes_obrigatorias_r))) %>% arrange(desc(valor)) %>% head() %>% kable(col.names = c("benficiário", "valor (R$)"), format.args = list(big.mark = ".", decimal.mark = ","))
+id_maior <-  as.character( tabela_pensionista_siape  %>% group_by(  id_servidor_portal) %>% summarise(valor = max((remuneracao_apos_deducoes_obrigatorias_r))) %>% arrange(desc(valor)) %>% head(1) %>% select(id_servidor_portal))
+
+maior <- str_remove( paste("https://portaldatransparencia.gov.br/servidores/",id_maior)," ")
+
+
+```
+
+![Portal da Transparência: maiores remunerações](servidores/servidores/top_benficio.png){#fig-top_remuneracao}
+
+`r  (maior)`
+
+### Valores e quantidade de beneficiários
+
+```{r}
+
+df_plot <- (tabela_pensionista_siape %>%  group_by(nome_id, inicio_pensao) %>% summarise(valor = max(remuneracao_basica_bruta_r), n=n()) %>% group_by(inicio_pensao) %>% summarise(valor = sum(valor), n =sum(n)) %>% mutate(valor_acumulado= cumsum(valor), quantitativo_acumulado = cumsum(n)))
+
+
+
+
+
+```
+
+### Benefício recebido por ano de início da pensão (valor acumulado)
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-beneficio_ano_inclusao_acumulado
+#| fig-cap: Benefício recebido por ano de início da pensão (valor acumulado em R$)
+
+p <- ggplot(df_plot, aes(x=inicio_pensao, y=valor_acumulado, label= Format(valor_acumulado, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p)  
+```
+
+### Benefício recebido por ano de início da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-beneficio_ano_inclusao
+#| fig-cap: Benefício recebido por ano de início da pensão (valor em R$)
+p <- ggplot(df_plot, aes(x=inicio_pensao, y=valor, label= Format(valor, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p)  
+```
+
+### Quantitativo de pensionistas por ano de início da pensão (acumulado)
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-pensionista_ano_inclusao_acumulado
+#| fig-cap: Quantitativo de pensionistas por ano de início da pensão (acumulado)
+p <- ggplot(df_plot, aes(x=inicio_pensao, y=quantitativo_acumulado, label= Format(quantitativo_acumulado, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p) 
+```
+
+### Quantitativo de pensionistas por ano de início da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-pensionista_ano_inclusao
+#| fig-cap: Quantitativo de pensionistas por ano de início da pensão
+p <- ggplot(df_plot, aes(x=inicio_pensao, y=n, label= Format(n, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p) 
+```
+
+### Quantitativo por tipo de pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-pensionista_tipo_pensao
+#| fig-cap: Quantitativo por tipo de pensão
+
+```
+
+```{r}
+
+p <- ggplot(tabela_pensionista_siape %>% filter(tempo_setor_publico>1) %>% group_by(cargo) %>% summarise(trabalho_medio = round(mean(tempo_setor_publico,na.rm = TRUE),1), tempo_usufruto_pensao = round(mean(tempo_usufruto_pensao, na.rm = TRUE),1), q=n(), proporcao = mean(proporcao, na.rm= TRUE)) %>% filter(q>100)  %>% pivot_longer(cols = c(tempo_usufruto_pensao, trabalho_medio), names_to = "situacao", values_to = "tempo") , aes(y=fct_reorder( cargo, proporcao), x=tempo, fill = situacao )) +
+    geom_col( position = "fill" )+
+  scale_color_continuous() +
+   theme(legend.position="none" ,axis.title.y = element_blank(),axis.title.x = element_blank(),axis.text.y=element_blank(),
+        axis.ticks.y=element_blank() )
+ggplotly(p)
+
+
+
+
+
+```
+
+### Quantitativo de pensionistas, por tipo e por ano de início da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: fig-pensionista_tipo_ano
+#| fig-cap: Quantitativo de pensionistas, por tipo e por ano de início da pensão
+
+p <- ggplot(tabela_pensionista_siape %>%   group_by(  inicio_pensao, tipo_pensao)    %>% count(), aes(x=inicio_pensao, y=n,colour=tipo_pensao ,label= Format(n, fmt = myNumFmt))) +
+    geom_line()   +
+   theme(legend.position="none", panel.grid.major.y = element_line(color = "grey") ,axis.title.y = element_blank(),axis.title.x = element_blank()) +scale_y_continuous(labels = label_number( big.mark = "."))
+
+ggplotly(p)
+```
+
+### Maiores valores por cargo do instituidor da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-maiores_valores_por_cargo
+#| tbl-cap: Maiores valores por cargo do instituidor da pensão
+tabela_pensionista_siape %>% group_by(cargo )    %>% summarise(valor = sum(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head(10)%>% kable(col.names = c("cargo","Valor total dos benefícios pagos aos dependentes (R$)"), digits = 0, format.args = list(big.mark = ".", decimal.mark = ","))
+
+
+
+
+
+
+```
+
+### Maiores valores médios por cargo do instituidor da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-maiores_valores_medios_por_cargo
+#| tbl-cap: Maiores valores médios por cargo do instituidor da pensão (R$)
+tabela_pensionista_siape %>% group_by( cargo)    %>% summarise(valor = mean(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% head(10) %>% kable( col.names = c("cargo","Valor médio do benefício a ser dividido entre os beneficiários (R$)"),digits = 0,format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+### Menores valores médios por cargo do instituidor da pensão
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| label: tbl-menores_valores_medios_por_cargo
+#| tbl-cap: Menores valores médios por cargo do instituidor da pensão (R$)
+tabela_pensionista_siape %>% filter (cargo != "Inválido") %>%  group_by( cargo)    %>% summarise(valor = mean(remuneracao_basica_bruta_r)) %>% arrange(desc(valor)) %>% tail(10) %>% kable(col.names = c("Cargo do instituidor da pensão","Valor médio do benefício a ser dividido entre os beneficiários (R$)"), digits = 0,format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+## Gráficos
+
+```{r}
+
+
+
+df_plot_contribuicao <- tabela_pensionista_siape %>% filter(!is.na(inicio_servico_publico),!is.na(inicio_pensao)) %>% group_by(inicio_servico_publico)%>% summarise( n =  n())%>% filter(!is.na(n))
+df_plot_pensao <- tabela_pensionista_siape %>% filter(!is.na(inicio_servico_publico),!is.na(inicio_pensao) ) %>% group_by(inicio_pensao) %>% summarise( n =  n())
+
+df_plot_saldo <-  full_join ( df_plot_contribuicao,df_plot_pensao , by = c( "inicio_servico_publico" = "inicio_pensao"))
+
+
+
+df_plot_saldo<- df_plot_saldo %>% rename( instituidores = n.x)
+df_plot_saldo<- df_plot_saldo %>% rename( beneficiarios = n.y )
+
+df_plot_saldo[is.na(df_plot_saldo)] <- 0
+
+df_plot_saldo <- df_plot_saldo %>% mutate(beneficiarios = - beneficiarios,  beneficiarios_acumulado = cumsum(beneficiarios),instituidores_acumulado = cumsum(instituidores), saldo =instituidores_acumulado+beneficiarios_acumulado,  )
+
+df_plot_saldo <-  df_plot_saldo %>% rename(ano = inicio_servico_publico)
+```
+
+### Instituidores x beneficiários
+
+```{r}
+
+
+
+p <- ggplot(df_plot_saldo) + 
+   geom_col(aes(ano ,  instituidores, fill = "blue")) +
+    geom_col( aes(ano,  beneficiarios, fill = "red")) +
+  xlab("data") + 
+  ylab("")+
+  theme_clean  ()+ theme(legend.position="none")+ scale_fill_identity()
+ggplotly(p)
+
+
+
+```
+
+### Saldo: instituidores x beneficiários
+
+```{r}
+
+
+p <- ggplot(df_plot_saldo) + 
+   geom_col(aes(ano ,  instituidores_acumulado, fill = "blue")) +
+    geom_col( aes(ano,  beneficiarios_acumulado, fill = "red")) +
+   geom_line( aes(ano,  saldo)) +
+  xlab("data") + 
+  ylab("")+
+  theme_clean  ()+ theme(legend.position="none")+ scale_fill_identity()
+ggplotly(p)
+```
+
+### Frequência tempo de usufruto da pensão
+
+```{r}
+
+df_plot_bell <- tabela_pensionista_siape  %>% group_by(inicio_servico_publico,inicio_pensao)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n()) %>% drop_na()
+
+
+
+p <- ggplot(df_plot_bell %>% select(inicio_servico_publico,inicio_pensao,n)%>% mutate(tempo = inicio_pensao - inicio_servico_publico) %>% group_by(tempo) %>% summarise(n = sum(n)) %>% arrange(desc(tempo))  %>% filter(tempo>0)) + 
+   geom_point(aes(n, tempo)) +
+    xlab("quantidade") + 
+  ylab("tempo de usofruto da pensão")+
+  theme_clean  ()+ theme(legend.position="none")+ scale_color_discrete() +coord_flip()
+ggplotly(p)
+```
+
+![](servidores/servidores/pensionista_1921.png)
+
+## Considerações finais
+
+Pesquisas futuras podem investigar:
+
+1.  os motivos para os picos ocorridos em 1980 e 2004 na concessão de benefícios para filhos.
+
+2.  os motivos para dois beneficiários constarem na tabela cadastro, mas estarem ausentes na tabela remuneração. @tbl-beneficiario_ausente_base_remuneracao
+
+3.  qual é a defasagem temporal entre a solicitação e a concessão do benefício previdenciário.
+
+4.  os motivos dos dados sigilosos na tabele cadastro
+
+Seria interessante se a base de dados disponibilizasse:
+
+1.  Data nascimento e óbito do instituidor da pensão
+
+2.  Data de nascimento do beneficiário da pensão
