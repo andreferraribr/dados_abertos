@@ -597,18 +597,18 @@ p <- ggplot(df_plot_saldo) +
 ggplotly(p)
 ```
 
-### Frequência tempo de usufruto da pensão
+### Frequência tempo de contribuição
 
 ```{r}
 
-df_plot_bell <- tabela_pensionista_siape  %>% group_by(inicio_servico_publico,inicio_pensao)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n()) %>% drop_na()
+df_plot_bell <- tabela_pensionista_siape %>% filter(tempo_setor_publico>0)  %>% group_by(inicio_servico_publico,inicio_pensao)  %>% summarise(valor = sum(remuneracao_basica_bruta_r), n=n()) %>% drop_na()
 
 
 
 p <- ggplot(df_plot_bell %>% select(inicio_servico_publico,inicio_pensao,n)%>% mutate(tempo = inicio_pensao - inicio_servico_publico) %>% group_by(tempo) %>% summarise(n = sum(n)) %>% arrange(desc(tempo))  %>% filter(tempo>0)) + 
    geom_point(aes(n, tempo)) +
     xlab("quantidade") + 
-  ylab("tempo de usofruto da pensão")+
+  ylab("tempo de contribuição")+
   theme_clean  ()+ theme(legend.position="none")+ scale_color_discrete() +coord_flip()
 ggplotly(p)
 ```
