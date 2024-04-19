@@ -2,22 +2,39 @@ project:
   type: book
 
 book:
-  title: "dados_abertos"
-  author: "Norah Jones"
-  date: "15/09/2023"
+  title: "Dados Abertos"
+  author: "André Ferrari"
+  date: "16/02/2024"
+  search: true
+  repo-url: https://github.com/andreferraribr/dados_abertos
+  sharing: [twitter, facebook]
   chapters:
-    - index.qmd
-    - intro.qmd
-    - summary.qmd
-    - references.qmd
+      - index.qmd
+      # - intro.qmd
+    # - summary.qmd
+    # - references.qmd
+      - globals.R
+      - formulas.qmd
+      - expulsos.qmd
+      - favorecidos2.qmd
+      - receitas.qmd
+      - jetons.qmd
+      - servidor.qmd
+      - pensionista_siape_cargo.qmd
+      - aposentado_siape_cargo.qmd
+      # - bolsa_familia.qmd
+      # - bcp.qmd
+      # - seguro_defeso_01.qmd
 
 bibliography: references.bib
 
 format:
   html:
     theme: cosmo
-  pdf:
-    documentclass: scrreprt
+  # docx:
+  #   toc: true
+  #   number-sections: true
+  #   highlight-style: github
 
 editor: visual
 
