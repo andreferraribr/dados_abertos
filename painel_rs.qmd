@@ -1,5 +1,5 @@
 ---
-title: "Painel RS"
+title: "Batimento dos dados do Painel Calamidade Pública RS"
 editor: visual
 lang: "pt"
 format:
@@ -24,17 +24,12 @@ library(janitor)
 library(lubridate)
 library(tidyverse)
 library(purrr)
-library(plotly)
 library(knitr)
-library(kableExtra)
-library(deflateBR)
 library(DescTools)
 library(zoo)
-library(stringr)
 library(DT)
 library(stringr)
-library(scales)
-library(ggthemes)
+
 
 ```
 
@@ -51,93 +46,96 @@ options(scipen = 999)
 options(DT.options = list(pageLength = 10, fontSize = "70%", language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese.json')))
 ```
 
+## Bases de Dados
+
+### Sof - Painel do Orçamento Federal
+
+#### Data de atualização
+
+Os dados da SOF foram baixados diretamente do [Painel do Orçamento Federal.](https://www1.siop.planejamento.gov.br/QvAJAXZfc/opendoc.htm?document=IAS%2FExecucao_Orcamentaria.qvw&host=QVS%40pqlk04&anonymous=true) Um ressalva importante, os dados do painel da SOF estão defasados em dois dias úteis em relação à base do SIAFI. Por exemplo, o painel publicado no dia 27/06/2024 utiliza os dados do SIAFI do dia 25/06/2024.
+
+![](rs/sof_data.png)
+
+#### Estrutura dos dados
+
+Deparamos com alguns desafios em relação à base de dados da SOF para diexá-la no mesmo padrão dos dados extrídos pelo Tesouro Gerencial. Os principais foram:
+
+1\) Colunas que precisavam ser removidas, por exemplo, a coluna "Ano"
+
+2\) Linhas que precisavam ser removidas, por exemplo, a linha com a totalização dos valores ("Total)
+
+3\) Colunas que precisavam ser separadas em dois atributos, um para o nome do atributo e outro para o código do atributo. Por exemplo, a partir da coluna "Programa" criar uma coluna para o código "1144 " e outro para o nome "Agropecuária Sustentável".
+
+![](rs/sof_limpar.png)
+
+### Tesouro Gerencial
+
+#### Data de atualização
+
+A base de dados do Tesouro Gerencial traz os lançamentos do Siafi do último dia útil. Por exemplo, um relatório rodado no Tesouro Gerencial no dia 27/06/2024 trará os dados do Siafi do dia 26/06/2024.
+
 ## Tratamento
 
+### Lindando com as diferenças temporais das atualizações das bases de dados
+
+Para bater os dados é necessario baixar os dados do Tesouro Gerencial, aguardar um dia, e depois baixar os dados do portal da SOF.
+
+### Limpeza e organização dos dados
+
 ```{r}
-library(readxl)
+#| warning: false
+#| message: false
+#| error: false
 
 
-sof_rs <- read_excel("rs/sof_rs.xlsx") %>% clean_names() 
+# a função "filter" elimina as linhas desnecessárias, por exemplo, a linha com a totalização dos valores.
+sof_rs <- read_excel("rs/sof_rs_download_2024_06_27.xlsx") %>% clean_names() %>% filter(!is.na(orgao))
 
-
-# sof_rs <- sof_rs %>% select(-ano, - marcador, -ano_referencia)
-
-
-
+# criamos a function "separar" para transformar separar os atributos em código e nome.
 separar <- function(x){str_split_fixed (x, " - ",2) }
 
-
+# utilizamos a "map" para separar os atributos das colunas 3 a 18, desta forma descartamos as colunas com os atributos "Ano" e "Marcador" (as duas primeiras colunas da tabela ) e também descartamos, temporariamente, as colunas com os valores (dotação, empenho, liquidação...)
 sof_rs_clean <-   sof_rs[3:18] %>% map(separar) %>% data.frame()
 
+# juntamos a tabela com os atributos categorizados por nome e código com os respectivos valores de dotação, empenho, liquidação e pagamento. Descartamos os valores de restos a pagar.
 sof_rs <- cbind(sof_rs_clean, sof_rs[20:24])
 
 
 
-
-
-
 ```
 
 ```{r}
-tg_rs <- read_excel("rs/tg_rs.xlsx") %>% clean_names()
+#| warning: false
+#| message: false
+#| error: false
+tg_rs <- read_excel("rs/tg_rs_download_2024_06_27.xlsx") %>% clean_names()
 
-tg_rs <- tg_rs %>% select( - item_informacao)
+# variável para retornar a data da base de dados do SIAFI
+tg_data_base_siafi <- tg_rs[1] %>% tail(1)
 
+# descartar a linha com a data da base de dados
+tg_rs <- tg_rs %>% select( - item_informacao)%>% filter(!is.na(unidade_orcamentaria_nome))
+
+# nomear as colunas da base de dados da SOF com os mesmos nomes da base de dados do TG
 names(sof_rs) <- colnames(tg_rs)
 
-
+# criar o atributo base para identificar quais dados vieram da SOF e quais dados vieram do TG
 sof_rs <- sof_rs %>% mutate(base= "sof")
 tg_rs <- tg_rs %>% mutate(base = "tg")
 
+# unificar as bases de dados
 dados <- rbind(sof_rs,tg_rs)
-```
-
-```{r}
-# sof_rs %>% group_by(plano_orcamentario_codigo_po) %>% summarise(sof_dotacao_atualizada= sum(( dotacao_atualizada), na.rm = TRUE))
-# 
-# tg_rs %>% group_by(plano_orcamentario_codigo_po) %>% summarise(tg_dotacao_atualizada= sum(dotacao_atualizada, na.rm = TRUE))
-# 
-# comparacao <- left_join(sof_rs %>% group_by(plano_orcamentario_codigo_po) %>% summarise(sof_dotacao_atualizada= sum(( dotacao_atualizada), na.rm = TRUE)),tg_rs %>% group_by(plano_orcamentario_codigo_po) %>% summarise(tg_dotacao_atualizada= sum(dotacao_atualizada, na.rm = TRUE)))%>% replace(is.na(.), 0) %>% mutate(diferenca = sof_dotacao_atualizada-tg_dotacao_atualizada )
-# 
-# datatable(comparacao )%>% formatRound(c("sof_dotacao_atualizada", "tg_dotacao_atualizada", "diferenca"), 0, mark = ".", dec.mark = ",")
-# 
-# 
-# 
-# sof_empenhado <- sof_rs %>% group_by(plano_orcamentario_codigo_po) %>% summarise(sof_despesas_empenhadas= sum(( despesas_empenhadas), na.rm = TRUE))
-# 
-# tg_empenhado <- tg_rs %>% group_by(plano_orcamentario_codigo_po) %>% summarise(tg_despesas_empenhadas= sum(despesas_empenhadas, na.rm = TRUE))
-# 
-# comparacao <- left_join(sof_empenhado,tg_empenhado)%>% replace(is.na(.), 0) %>% mutate(diferenca = sof_despesas_empenhadas-tg_despesas_empenhadas )
-# 
-# datatable(comparacao )%>% formatRound(c("sof_despesas_empenhadas", "tg_despesas_empenhadas", "diferenca"), 0, mark = ".", dec.mark = ",")
-```
-
-```{r}
-
-
-# datatable(dados %>%
-#             filter (plano_orcamentario_codigo_po == "CP20") %>%
-#             group_by(unidade_orcamentaria_codigo, acao_governo_codigo,funcao_governo_codigo, base) %>%
-#             summarise(dotacao_atualizada = sum(dotacao_atualizada, na.rm = TRUE)) %>%
-#             pivot_wider(names_from = base, values_from = dotacao_atualizada) %>%
-#             mutate(diferenca = sof-tg) %>%
-#             filter(diferenca !=0) %>%
-#             arrange(diferenca))%>%
-#   formatRound(c("sof", "tg", "diferenca"), 2, mark = ".", dec.mark = ",")
 ```
 
 ## Dotação inicial
 
 ```{r}
+#| warning: false
+#| message: false
+#| error: false
 datatable(
   dados %>%
-    group_by(plano_orcamentario_codigo_po,
-             orgao_uge_orgao_maximo_codigo,
-             unidade_orcamentaria_codigo,
-             acao_governo_codigo,
-             funcao_governo_codigo,
-             subfuncao_governo_codigo,
-             resultado_eof_codigo, base) %>%
+    group_by(plano_orcamentario_codigo_po, base) %>%
     summarise(dotacao_atualizada = sum(dotacao_atualizada, na.rm = TRUE)) %>%
     pivot_wider(
       names_from = base,
@@ -152,6 +150,9 @@ datatable(
 ## Despesas empenhadas
 
 ```{r}
+#| warning: false
+#| message: false
+#| error: false
 datatable(
   dados %>%
     group_by(plano_orcamentario_codigo_po, base) %>%
@@ -160,11 +161,7 @@ datatable(
       names_from = base,
       values_from = despesas_empenhadas) %>%
     mutate(diferenca = sof-tg) %>%
-    filter(diferenca != 0) %>%
+    # filter(diferenca != 0) %>%
     arrange((diferenca)))%>%
   formatRound(c("sof", "tg", "diferenca"), 0, mark = ".", dec.mark = ",")
-```
-
-```{r}
-datatable(dados %>% filter (plano_orcamentario_codigo_po == "CP20") %>% group_by(unidade_orcamentaria_codigo, acao_governo_codigo,funcao_governo_codigo, base) %>% summarise(despesas_empenhadas = sum(despesas_empenhadas, na.rm = TRUE)) %>% pivot_wider(names_from = base, values_from = despesas_empenhadas) %>% mutate(diferenca = sof-tg) %>% filter(diferenca !=0) %>% arrange((diferenca)))%>% formatRound(c("sof", "tg", "diferenca"), 0, mark = ".", dec.mark = ",")
 ```
